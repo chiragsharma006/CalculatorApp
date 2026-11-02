@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Calculator</string>
+    <string name="history_title">Calculation History</string>
+    <string name="clear_history">Clear History</string>
+    <string name="no_history">No calculations yet</string>
+    <string name="clear_history_confirmation">Are you sure you want to clear all calculation history?</string>
+    <string name="clear">Clear</string>
+    <string name="cancel">Cancel</string>
+    <string name="choose_theme">Choose Theme</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+</resources>
