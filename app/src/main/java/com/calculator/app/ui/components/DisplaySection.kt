@@ -166,16 +166,11 @@ fun DisplaySection(
         horizontalAlignment = Alignment.End,
         verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Bottom
     ) {
-        // Main Expression Text with Interactive Draggable Cursor & Tap Placement
+        // Main Expression Text with Interactive Draggable Cursor & Native System Magnifier
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth()
         ) {
             val minWidth = maxWidth
-            val containerWidthPx = with(density) { maxWidth.toPx() }
-            val clamped = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
-            val rect = if (isDraggingCursor) textLayoutResult.getCursorRectSafe(clamped) else null
-            val cursorScreenX = (rect?.left ?: 0f) + horizontalInsetPx - scrollState.value
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -187,6 +182,18 @@ fun DisplaySection(
                         .widthIn(min = minWidth)
                         .padding(horizontal = horizontalInset)
                         .padding(bottom = 16.dp, top = 4.dp)
+                        .cursorMagnifier(
+                            enabled = isDraggingCursor,
+                            sourceCenter = {
+                                val currentClamped = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
+                                val currentRect = textLayoutResult.getCursorRectSafe(currentClamped)
+                                if (currentRect != null) {
+                                    Offset(currentRect.left, (currentRect.top + currentRect.bottom) / 2f)
+                                } else {
+                                    Offset.Unspecified
+                                }
+                            }
+                        )
                         .pointerInput(showCursor) {
                             if (showCursor) {
                                 awaitEachGesture {
@@ -195,7 +202,7 @@ fun DisplaySection(
                                     val currentClamped = if (currentIsPlaceholder) 1 else currentFormattedCursorIndex.coerceIn(0, currentDisplayText.length)
                                     val currentRect = layout.getCursorRectSafe(currentClamped)
 
-                                    val handleRadius = 8.dp.toPx()
+                                    val handleRadius = 6.5.dp.toPx()
                                     val handleCenter = if (currentRect != null) {
                                         Offset(currentRect.left, currentRect.bottom + handleRadius - 1.dp.toPx())
                                     } else null
@@ -254,12 +261,12 @@ fun DisplaySection(
                                 val cursorRect = textLayoutResult.getCursorRectSafe(clampedIndex)
                                 if (cursorRect != null) {
                                     val effectiveAlpha = if (isDraggingCursor) 1f else cursorAlpha
-                                    val cursorWidth = if (isDraggingCursor) 3.dp.toPx() else 2.5.dp.toPx()
+                                    val cursorWidth = 2.dp.toPx()
                                     val verticalInset = 2.dp.toPx()
                                     val cursorHeight = (cursorRect.bottom - cursorRect.top - verticalInset * 2).coerceAtLeast(12f)
                                     val cursorTop = cursorRect.top + verticalInset
 
-                                    // Vertical cursor line
+                                    // Vertical cursor bar (matching clean Finance tool style)
                                     drawRoundRect(
                                         color = colors.equalsKeyBg.copy(alpha = effectiveAlpha),
                                         topLeft = Offset(cursorRect.left - cursorWidth / 2, cursorTop),
@@ -267,20 +274,10 @@ fun DisplaySection(
                                         cornerRadius = CornerRadius(cursorWidth / 2, cursorWidth / 2)
                                     )
 
-                                    // Draggable teardrop/droplet handle at bottom of cursor line
-                                    val handleRadius = if (isDraggingCursor) 8.dp.toPx() else 6.dp.toPx()
+                                    // Teardrop droplet handle directly at bottom of cursor line
+                                    val handleRadius = 6.dp.toPx()
                                     val handleCenter = Offset(cursorRect.left, cursorRect.bottom + handleRadius - 1.dp.toPx())
 
-                                    if (isDraggingCursor) {
-                                        // Subtle glowing halo when actively dragging
-                                        drawCircle(
-                                            color = colors.equalsKeyBg.copy(alpha = 0.25f),
-                                            radius = handleRadius + 6.dp.toPx(),
-                                            center = handleCenter
-                                        )
-                                    }
-
-                                    // Solid handle circle
                                     drawCircle(
                                         color = colors.equalsKeyBg.copy(alpha = effectiveAlpha),
                                         radius = handleRadius,
@@ -306,17 +303,6 @@ fun DisplaySection(
                     )
                 }
             }
-
-            // Magnified loupe bubble floating directly above cursor while dragging
-            MagnifierPopup(
-                visible = isDraggingCursor,
-                displayText = displayText,
-                cursorIndex = clamped,
-                cursorX = cursorScreenX,
-                containerWidth = containerWidthPx,
-                cursorColor = colors.equalsKeyBg,
-                yOffset = (-38).dp
-            )
         }
 
         Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
