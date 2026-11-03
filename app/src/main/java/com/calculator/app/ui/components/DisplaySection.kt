@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.TextLayoutResult
@@ -58,11 +59,15 @@ fun DisplaySection(
     isLandscape: Boolean = false
 ) {
     val colors = LocalCalculatorColors.current
+    val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
     val viewConfig = LocalViewConfiguration.current
     val scrollState = rememberScrollState()
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var isDraggingCursor by remember { mutableStateOf(false) }
+
+    val horizontalInset = 14.dp
+    val horizontalInsetPx = with(density) { horizontalInset.toPx() }
 
     // Format expression and compute bidirectional cursor mapping
     val formattedExpression = remember(expression, numberingSystem) {
@@ -78,6 +83,8 @@ fun DisplaySection(
     val currentCursorIndex by rememberUpdatedState(cursorIndex)
     val currentOnCursorChange by rememberUpdatedState(onCursorChange)
     val currentFormattedExpression by rememberUpdatedState(formattedExpression)
+    val currentFormattedCursorIndex by rememberUpdatedState(formattedCursorIndex)
+    val currentDisplayText by rememberUpdatedState(displayText)
     val currentTextLayoutResult by rememberUpdatedState(textLayoutResult)
     val currentHaptic by rememberUpdatedState(haptic)
     val currentIsPlaceholder by rememberUpdatedState(isPlaceholder)
@@ -111,28 +118,26 @@ fun DisplaySection(
 
     // Keep cursor visible when cursorIndex, expression, or numbering system changes
     LaunchedEffect(expression, cursorIndex, numberingSystem) {
-        if (!isDraggingCursor) {
-            val layout = textLayoutResult
-            if (layout != null && displayText.isNotEmpty()) {
-                val clamped = formattedCursorIndex.coerceIn(0, displayText.length)
-                val rect = layout.getCursorRect(clamped)
-                val cursorX = rect.left
-                val viewportSize = scrollState.viewportSize
-                if (viewportSize > 0) {
-                    val currentScroll = scrollState.value
-                    if (cursorX < currentScroll + 40) {
-                        scrollState.animateScrollTo((cursorX - 60).toInt().coerceAtLeast(0))
-                    } else if (cursorX > currentScroll + viewportSize - 40) {
-                        scrollState.animateScrollTo((cursorX - viewportSize + 60).toInt().coerceAtMost(scrollState.maxValue))
-                    }
+        val layout = textLayoutResult
+        if (layout != null && displayText.isNotEmpty()) {
+            val clamped = formattedCursorIndex.coerceIn(0, displayText.length)
+            val rect = layout.getCursorRect(clamped)
+            val cursorX = rect.left + horizontalInsetPx
+            val viewportSize = scrollState.viewportSize
+            if (viewportSize > 0) {
+                val currentScroll = scrollState.value
+                if (cursorX < currentScroll + 50) {
+                    scrollState.animateScrollTo((cursorX - 70).toInt().coerceAtLeast(0))
+                } else if (cursorX > currentScroll + viewportSize - 50) {
+                    scrollState.animateScrollTo((cursorX - viewportSize + 70).toInt().coerceAtMost(scrollState.maxValue))
                 }
-            } else {
-                scrollState.animateScrollTo(scrollState.maxValue)
             }
+        } else {
+            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
-    val horizontalPadding = if (isLandscape) 16.dp else 24.dp
+    val horizontalPadding = if (isLandscape) 12.dp else 16.dp
     val verticalPadding = if (isLandscape) 8.dp else 16.dp
 
     val exprFontSize = when {
@@ -166,6 +171,11 @@ fun DisplaySection(
             modifier = Modifier.fillMaxWidth()
         ) {
             val minWidth = maxWidth
+            val containerWidthPx = with(density) { maxWidth.toPx() }
+            val clamped = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
+            val rect = textLayoutResult?.getCursorRect(clamped)
+            val cursorScreenX = (rect?.left ?: 0f) + horizontalInsetPx - scrollState.value
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -175,61 +185,91 @@ fun DisplaySection(
                 Box(
                     modifier = Modifier
                         .widthIn(min = minWidth)
+                        .padding(horizontal = horizontalInset)
                         .padding(bottom = 16.dp, top = 4.dp)
                         .pointerInput(showCursor) {
                             if (showCursor) {
                                 awaitEachGesture {
                                     val down = awaitFirstDown(requireUnconsumed = false)
-                                    updateCursorFromOffset(down.position)
-                                    down.consume()
+                                    val layout = currentTextLayoutResult
+                                    val currentClamped = if (currentIsPlaceholder) 1 else currentFormattedCursorIndex.coerceIn(0, currentDisplayText.length)
+                                    val currentRect = layout?.getCursorRect(currentClamped)
 
-                                    var isDragging = false
-                                    val pointerId = down.id
+                                    val handleRadius = 8.dp.toPx()
+                                    val handleCenter = if (currentRect != null) {
+                                        Offset(currentRect.left, currentRect.bottom + handleRadius - 1.dp.toPx())
+                                    } else null
 
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.find { it.id == pointerId } ?: break
-                                        if (change.pressed) {
-                                            val dist = (change.position - down.position).getDistance()
-                                            if (dist > viewConfig.touchSlop || isDragging) {
-                                                if (!isDragging) {
-                                                    isDragging = true
-                                                    isDraggingCursor = true
-                                                }
+                                    // Generous touch target around the droplet handle circle
+                                    val hitRadius = 26.dp.toPx()
+                                    val isHandleHit = handleCenter != null && (down.position - handleCenter).getDistance() <= hitRadius
+
+                                    if (isHandleHit) {
+                                        // User specifically grabbed the droplet handle: consume down and drag events
+                                        down.consume()
+                                        isDraggingCursor = true
+                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+
+                                        val pointerId = down.id
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.find { it.id == pointerId } ?: break
+                                            if (change.pressed) {
                                                 change.consume()
                                                 updateCursorFromOffset(change.position)
+                                            } else {
+                                                break
                                             }
-                                        } else {
-                                            break
+                                        }
+                                        isDraggingCursor = false
+                                    } else {
+                                        // User touched the expression text outside the handle.
+                                        // Do not consume drag so horizontalScroll can scroll smoothly!
+                                        val pointerId = down.id
+                                        var moved = false
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.find { it.id == pointerId } ?: break
+                                            if (change.pressed) {
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop || change.isConsumed) {
+                                                    moved = true
+                                                }
+                                            } else {
+                                                // Pointer released: if tap without scrolling or moving, place cursor
+                                                if (!moved && !change.isConsumed) {
+                                                    updateCursorFromOffset(down.position)
+                                                }
+                                                break
+                                            }
                                         }
                                     }
-                                    isDraggingCursor = false
                                 }
                             }
                         }
                         .drawWithContent {
                             drawContent()
                             if (showCursor) {
-                                val clamped = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
-                                val rect = textLayoutResult?.getCursorRect(clamped)
-                                if (rect != null) {
+                                val clampedIndex = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
+                                val cursorRect = textLayoutResult?.getCursorRect(clampedIndex)
+                                if (cursorRect != null) {
                                     val effectiveAlpha = if (isDraggingCursor) 1f else cursorAlpha
                                     val cursorWidth = if (isDraggingCursor) 3.dp.toPx() else 2.5.dp.toPx()
                                     val verticalInset = 2.dp.toPx()
-                                    val cursorHeight = (rect.bottom - rect.top - verticalInset * 2).coerceAtLeast(12f)
-                                    val cursorTop = rect.top + verticalInset
+                                    val cursorHeight = (cursorRect.bottom - cursorRect.top - verticalInset * 2).coerceAtLeast(12f)
+                                    val cursorTop = cursorRect.top + verticalInset
 
                                     // Vertical cursor line
                                     drawRoundRect(
                                         color = colors.equalsKeyBg.copy(alpha = effectiveAlpha),
-                                        topLeft = Offset(rect.left - cursorWidth / 2, cursorTop),
+                                        topLeft = Offset(cursorRect.left - cursorWidth / 2, cursorTop),
                                         size = Size(cursorWidth, cursorHeight),
                                         cornerRadius = CornerRadius(cursorWidth / 2, cursorWidth / 2)
                                     )
 
                                     // Draggable teardrop/droplet handle at bottom of cursor line
                                     val handleRadius = if (isDraggingCursor) 8.dp.toPx() else 6.dp.toPx()
-                                    val handleCenter = Offset(rect.left, rect.bottom + handleRadius - 1.dp.toPx())
+                                    val handleCenter = Offset(cursorRect.left, cursorRect.bottom + handleRadius - 1.dp.toPx())
 
                                     if (isDraggingCursor) {
                                         // Subtle glowing halo when actively dragging
@@ -266,6 +306,17 @@ fun DisplaySection(
                     )
                 }
             }
+
+            // Magnified loupe bubble floating directly above cursor while dragging
+            MagnifierPopup(
+                visible = isDraggingCursor,
+                displayText = displayText,
+                cursorIndex = clamped,
+                cursorX = cursorScreenX,
+                containerWidth = containerWidthPx,
+                cursorColor = colors.equalsKeyBg,
+                yOffset = (-60).dp
+            )
         }
 
         Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
