@@ -763,7 +763,7 @@ private fun ConversionUnitRow(
                         cursorX = cursorScreenX,
                         containerWidth = containerWidthPx,
                         cursorColor = colors.operatorKeyText,
-                        yOffset = (-54).dp
+                        yOffset = (-36).dp
                     )
                 }
                 Text(

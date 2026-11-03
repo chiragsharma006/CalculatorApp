@@ -52,6 +52,8 @@ fun TextLayoutResult?.getCursorRectSafe(offset: Int): Rect? {
  * Floating magnified loupe bubble that appears directly above the cursor while dragging.
  * Enlarges the surrounding digits and renders a high-visibility cursor bar in the center
  * so users can place the cursor with pixel-perfect confidence.
+ *
+ * Compact height and dynamic clamping ensure it never collides with top app bars or off-screen bezels.
  */
 @Composable
 fun MagnifierPopup(
@@ -62,7 +64,7 @@ fun MagnifierPopup(
     containerWidth: Float,
     modifier: Modifier = Modifier,
     cursorColor: Color = LocalCalculatorColors.current.equalsKeyBg,
-    yOffset: Dp = (-58).dp
+    yOffset: Dp = (-38).dp
 ) {
     val colors = LocalCalculatorColors.current
     val density = LocalDensity.current
@@ -86,7 +88,7 @@ fun MagnifierPopup(
 
     val marginPx = with(density) { 8.dp.toPx() }
     val yOffsetPx = with(density) { yOffset.toPx() }.roundToInt()
-    val estimatedWidthPx = with(density) { 110.dp.toPx() }
+    val estimatedWidthPx = with(density) { 95.dp.toPx() }
     val effectiveWidth = if (popupWidthPx > 0) popupWidthPx else estimatedWidthPx
 
     val idealTargetX = cursorX - (effectiveWidth / 2f)
@@ -97,8 +99,8 @@ fun MagnifierPopup(
     }
 
     // Pointer offset relative to the popup box
-    val pointerWidthPx = with(density) { 12.dp.toPx() }
-    val pointerMarginPx = with(density) { 14.dp.toPx() }
+    val pointerWidthPx = with(density) { 10.dp.toPx() }
+    val pointerMarginPx = with(density) { 12.dp.toPx() }
     val idealPointerX = cursorX - targetXPx - (pointerWidthPx / 2f)
     val pointerXPx = idealPointerX.coerceIn(
         pointerMarginPx,
@@ -119,27 +121,27 @@ fun MagnifierPopup(
             Column {
                 // Main Loupe Bubble
                 Surface(
-                    shape = RoundedCornerShape(22.dp),
+                    shape = RoundedCornerShape(16.dp),
                     color = colors.surface,
-                    tonalElevation = 8.dp,
-                    shadowElevation = 10.dp,
-                    border = BorderStroke(1.5.dp, cursorColor.copy(alpha = 0.7f)),
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    border = BorderStroke(1.2.dp, cursorColor.copy(alpha = 0.7f)),
                     modifier = Modifier.shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(22.dp),
-                        spotColor = cursorColor.copy(alpha = 0.45f)
+                        elevation = 6.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        spotColor = cursorColor.copy(alpha = 0.4f)
                     )
                 ) {
                     Row(
                         modifier = Modifier
-                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                            .padding(horizontal = 10.dp, vertical = 3.5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         // Text slice before cursor
                         Text(
                             text = (if (hasMoreBefore) "…" else "") + beforeText,
-                            fontSize = 24.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
                             color = colors.textPrimary
@@ -148,16 +150,16 @@ fun MagnifierPopup(
                         // Center magnified vertical cursor bar
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 2.5.dp)
-                                .width(3.dp)
-                                .height(26.dp)
-                                .background(cursorColor, RoundedCornerShape(1.5.dp))
+                                .padding(horizontal = 2.dp)
+                                .width(2.dp)
+                                .height(20.dp)
+                                .background(cursorColor, RoundedCornerShape(1.dp))
                         )
 
                         // Text slice after cursor
                         Text(
                             text = afterText + (if (hasMoreAfter) "…" else ""),
-                            fontSize = 24.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
                             color = colors.textPrimary
@@ -169,7 +171,7 @@ fun MagnifierPopup(
                 Canvas(
                     modifier = Modifier
                         .offset { IntOffset(pointerXPx.roundToInt(), 0) }
-                        .size(width = 12.dp, height = 6.dp)
+                        .size(width = 10.dp, height = 5.dp)
                 ) {
                     val path = Path().apply {
                         moveTo(0f, 0f)

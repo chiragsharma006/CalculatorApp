@@ -562,7 +562,7 @@ private fun BaseDisplayCard(
             cursorX = cursorScreenX,
             containerWidth = containerWidthPx,
             cursorColor = colors.operatorKeyText,
-            yOffset = (-50).dp
+            yOffset = (-36).dp
         )
     }
 }

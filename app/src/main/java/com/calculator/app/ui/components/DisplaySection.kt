@@ -133,15 +133,11 @@ fun DisplaySection(
                         scrollState.animateScrollTo((cursorX - viewportSize + 70).toInt().coerceAtMost(scrollState.maxValue))
                     }
                 }
-            } else {
-                scrollState.animateScrollTo(scrollState.maxValue)
             }
-        } else {
-            scrollState.animateScrollTo(scrollState.maxValue)
         }
     }
 
-    val horizontalPadding = if (isLandscape) 12.dp else 16.dp
+    val horizontalPadding = if (isLandscape) 14.dp else 18.dp
     val verticalPadding = if (isLandscape) 8.dp else 16.dp
 
     val exprFontSize = when {
@@ -305,7 +301,7 @@ fun DisplaySection(
                         fontWeight = if (isResultCalculated) FontWeight.Normal else FontWeight.Medium,
                         textAlign = TextAlign.End,
                         maxLines = 1,
-                        modifier = Modifier.widthIn(min = minWidth),
+                        modifier = Modifier.widthIn(min = (minWidth - horizontalInset * 2).coerceAtLeast(0.dp)),
                         onTextLayout = { textLayoutResult = it }
                     )
                 }
@@ -319,7 +315,7 @@ fun DisplaySection(
                 cursorX = cursorScreenX,
                 containerWidth = containerWidthPx,
                 cursorColor = colors.equalsKeyBg,
-                yOffset = (-60).dp
+                yOffset = (-38).dp
             )
         }
 
