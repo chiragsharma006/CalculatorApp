@@ -17,11 +17,13 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Savings
@@ -30,10 +32,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,6 +50,8 @@ import androidx.compose.ui.unit.sp
 import com.calculator.app.data.preferences.LocalNumberingSystem
 import com.calculator.app.domain.format.NumberFormatter
 import com.calculator.app.domain.tools.DiscountResult
+import com.calculator.app.ui.components.ClipboardHelper
+import com.calculator.app.ui.components.CutCopyPastePopup
 import com.calculator.app.domain.tools.FinanceEngine
 import com.calculator.app.domain.tools.GstResult
 import com.calculator.app.domain.tools.LoanEmiResult
@@ -1570,6 +1579,10 @@ private fun FinanceInputField(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCalculatorColors.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
     Column(modifier = modifier) {
         Text(
@@ -1583,7 +1596,17 @@ private fun FinanceInputField(
             color = colors.background.copy(alpha = 0.6f),
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, colors.textSecondary.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { offset ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            actionPopupOffset = offset
+                            showActionPopup = true
+                        }
+                    )
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -1653,9 +1676,59 @@ private fun FinanceInputField(
                             modifier = Modifier.size(15.dp)
                         )
                     }
+                } else if (ClipboardHelper.hasClipboardText(context)) {
+                    IconButton(
+                        onClick = {
+                            val clip = ClipboardHelper.getClipboardText(context)
+                            if (clip != null) {
+                                val sanitized = ClipboardHelper.sanitizeDecimalPaste(clip)
+                                if (sanitized.isNotEmpty()) onValueChange(sanitized)
+                            }
+                        },
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentPaste,
+                            contentDescription = "Paste",
+                            tint = colors.operatorKeyText,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
                 }
             }
         }
+
+        val hasClipboard = remember(showActionPopup) {
+            if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+        }
+        CutCopyPastePopup(
+            visible = showActionPopup,
+            onDismissRequest = { showActionPopup = false },
+            anchorOffset = actionPopupOffset,
+            onCut = if (value.isNotEmpty()) {
+                {
+                    ClipboardHelper.cut(context, value)
+                    onValueChange("")
+                    showActionPopup = false
+                }
+            } else null,
+            onCopy = if (value.isNotEmpty()) {
+                {
+                    ClipboardHelper.copy(context, value)
+                    showActionPopup = false
+                }
+            } else null,
+            onPaste = if (hasClipboard) {
+                {
+                    val clip = ClipboardHelper.getClipboardText(context)
+                    if (clip != null) {
+                        val sanitized = ClipboardHelper.sanitizeDecimalPaste(clip)
+                        if (sanitized.isNotEmpty()) onValueChange(sanitized)
+                    }
+                    showActionPopup = false
+                }
+            } else null
+        )
     }
 }
 

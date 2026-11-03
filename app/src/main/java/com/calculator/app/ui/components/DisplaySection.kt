@@ -32,6 +32,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -56,8 +57,12 @@ fun DisplaySection(
     onCursorChange: (Int) -> Unit,
     numberingSystem: NumberingSystem = NumberingSystem.INTERNATIONAL,
     modifier: Modifier = Modifier,
-    isLandscape: Boolean = false
+    isLandscape: Boolean = false,
+    onCut: (() -> Unit)? = null,
+    onCopy: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val colors = LocalCalculatorColors.current
     val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
@@ -65,6 +70,8 @@ fun DisplaySection(
     val scrollState = rememberScrollState()
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var isDraggingCursor by remember { mutableStateOf(false) }
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
     val horizontalInset = 14.dp
     val horizontalInsetPx = with(density) { horizontalInset.toPx() }
@@ -212,28 +219,48 @@ fun DisplaySection(
                                     val isHandleHit = handleCenter != null && (down.position - handleCenter).getDistance() <= hitRadius
 
                                     if (isHandleHit) {
-                                        // User specifically grabbed the droplet handle: consume down and drag events
+                                        // User specifically grabbed the droplet handle
                                         down.consume()
-                                        isDraggingCursor = true
-                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-
+                                        var hasDragged = false
                                         val pointerId = down.id
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
                                             if (change.pressed) {
-                                                change.consume()
-                                                updateCursorFromOffset(change.position)
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop) {
+                                                    if (!hasDragged) {
+                                                        hasDragged = true
+                                                        isDraggingCursor = true
+                                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                    change.consume()
+                                                    updateCursorFromOffset(change.position)
+                                                }
                                             } else {
                                                 break
                                             }
                                         }
                                         isDraggingCursor = false
+
+                                        // If the user tapped the handle without dragging:
+                                        if (!hasDragged) {
+                                            val canCutOrCopy = !currentIsPlaceholder && currentExpression.isNotEmpty()
+                                            val hasClip = ClipboardHelper.hasClipboardText(context)
+                                            if (canCutOrCopy || hasClip) {
+                                                currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                actionPopupOffset = handleCenter ?: down.position
+                                                showActionPopup = true
+                                            }
+                                        }
                                     } else {
                                         // User touched the expression text outside the handle.
-                                        // Do not consume drag so horizontalScroll can scroll smoothly!
                                         val pointerId = down.id
                                         var moved = false
+                                        var isLongPress = false
+                                        val longPressTimeout = viewConfig.longPressTimeoutMillis
+                                        val startTime = System.currentTimeMillis()
+
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
@@ -241,14 +268,54 @@ fun DisplaySection(
                                                 val dist = (change.position - down.position).getDistance()
                                                 if (dist > viewConfig.touchSlop || change.isConsumed) {
                                                     moved = true
+                                                    showActionPopup = false
+                                                } else if (!moved && !isLongPress && (System.currentTimeMillis() - startTime >= longPressTimeout)) {
+                                                    isLongPress = true
+                                                    currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    updateCursorFromOffset(down.position)
+                                                    val canCutOrCopy = !currentIsPlaceholder && currentExpression.isNotEmpty()
+                                                    val hasClip = ClipboardHelper.hasClipboardText(context)
+                                                    if (canCutOrCopy || hasClip) {
+                                                        actionPopupOffset = down.position
+                                                        showActionPopup = true
+                                                    }
                                                 }
                                             } else {
-                                                // Pointer released: if tap without scrolling or moving, place cursor
-                                                if (!moved && !change.isConsumed) {
+                                                // Pointer released
+                                                if (!moved && !isLongPress && !change.isConsumed) {
                                                     updateCursorFromOffset(down.position)
+                                                    showActionPopup = false
                                                 }
                                                 break
                                             }
+                                        }
+                                    }
+                                }
+                            } else {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    val pointerId = down.id
+                                    var moved = false
+                                    var isLongPress = false
+                                    val longPressTimeout = viewConfig.longPressTimeoutMillis
+                                    val startTime = System.currentTimeMillis()
+
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.find { it.id == pointerId } ?: break
+                                        if (change.pressed) {
+                                            val dist = (change.position - down.position).getDistance()
+                                            if (dist > viewConfig.touchSlop || change.isConsumed) {
+                                                moved = true
+                                                showActionPopup = false
+                                            } else if (!moved && !isLongPress && (System.currentTimeMillis() - startTime >= longPressTimeout)) {
+                                                isLongPress = true
+                                                currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                actionPopupOffset = down.position
+                                                showActionPopup = true
+                                            }
+                                        } else {
+                                            break
                                         }
                                     }
                                 }
@@ -334,14 +401,72 @@ fun DisplaySection(
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.End,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onLongPress = { offset ->
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    actionPopupOffset = offset
+                                    showActionPopup = true
+                                }
+                            )
+                        }
                     )
                 }
                 formattedPreviewResult.isNotEmpty() -> {
-                    PreviewResultText(formattedPreviewResult, colors, previewFontSize)
+                    PreviewResultText(
+                        previewResult = formattedPreviewResult,
+                        colors = colors,
+                        fontSize = previewFontSize,
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            ClipboardHelper.copy(context, previewResult, "Preview Result")
+                        }
+                    )
                 }
             }
         }
+
+        // Floating Cut / Copy / Paste popup above cursor or touch point
+        val canCopyOrCut = if (isResultCalculated) {
+            finalResult.isNotEmpty()
+        } else {
+            !isPlaceholder && expression.isNotEmpty()
+        }
+        val hasClipboard = remember(showActionPopup) {
+            if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+        }
+
+        CutCopyPastePopup(
+            visible = showActionPopup,
+            onDismissRequest = { showActionPopup = false },
+            anchorOffset = actionPopupOffset,
+            onCut = if (canCopyOrCut) {
+                {
+                    val textToCut = if (isResultCalculated) finalResult else expression
+                    ClipboardHelper.cut(context, textToCut)
+                    onCut?.invoke()
+                    showActionPopup = false
+                }
+            } else null,
+            onCopy = if (canCopyOrCut) {
+                {
+                    val textToCopy = if (isResultCalculated) finalResult else expression
+                    ClipboardHelper.copy(context, textToCopy)
+                    onCopy?.invoke()
+                    showActionPopup = false
+                }
+            } else null,
+            onPaste = if (hasClipboard) {
+                {
+                    val text = ClipboardHelper.getClipboardText(context)
+                    if (text != null) {
+                        onPaste?.invoke(text)
+                    }
+                    showActionPopup = false
+                }
+            } else null
+        )
     }
 }
 
@@ -349,7 +474,8 @@ fun DisplaySection(
 private fun PreviewResultText(
     previewResult: String,
     colors: com.calculator.app.ui.theme.CalculatorColors,
-    fontSize: androidx.compose.ui.unit.TextUnit = 28.sp
+    fontSize: androidx.compose.ui.unit.TextUnit = 28.sp,
+    onLongClick: (() -> Unit)? = null
 ) {
     AnimatedVisibility(
         visible = true,
@@ -363,7 +489,14 @@ private fun PreviewResultText(
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.End,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.pointerInput(onLongClick) {
+                if (onLongClick != null) {
+                    detectTapGestures(
+                        onLongPress = { onLongClick() }
+                    )
+                }
+            }
         )
     }
 }

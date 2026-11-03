@@ -1,17 +1,23 @@
 package com.calculator.app.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -214,6 +220,9 @@ private fun HistoryItemRow(
         NumberFormatter.formatNumber(record.result, numberingSystem)
     }
 
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = colors.functionKeyBg.copy(alpha = 0.5f)
@@ -236,22 +245,40 @@ private fun HistoryItemRow(
                     fontSize = 12.sp,
                     color = colors.textSecondary.copy(alpha = 0.8f)
                 )
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.size(24.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Delete entry",
-                        tint = colors.textSecondary.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
-                    )
+                    IconButton(
+                        onClick = {
+                            ClipboardHelper.copy(context, "${record.expression} = ${record.result}", "Equation")
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = "Copy equation",
+                            tint = colors.textSecondary.copy(alpha = 0.7f),
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Delete entry",
+                            tint = colors.textSecondary.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Expression (clickable to load into calculator)
+            // Expression (clickable to load, long-click to copy)
             Text(
                 text = formattedExpression,
                 fontSize = 18.sp,
@@ -260,16 +287,32 @@ private fun HistoryItemRow(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onExpressionClick() }
+                    .pointerInput(record.expression) {
+                        detectTapGestures(
+                            onTap = { onExpressionClick() },
+                            onLongPress = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                ClipboardHelper.copy(context, record.expression, "Expression")
+                            }
+                        )
+                    }
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Result (clickable to insert result)
+            // Result (clickable to insert, long-click to copy)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onResultClick() },
+                    .pointerInput(record.result) {
+                        detectTapGestures(
+                            onTap = { onResultClick() },
+                            onLongPress = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                ClipboardHelper.copy(context, record.result, "Result")
+                            }
+                        )
+                    },
                 horizontalArrangement = Arrangement.End
             ) {
                 Text(

@@ -9,6 +9,7 @@ import com.calculator.app.data.repository.CalculatorRepository
 import com.calculator.app.data.repository.ICalculatorRepository
 import com.calculator.app.domain.EvalResult
 import com.calculator.app.domain.MathEvaluator
+import com.calculator.app.ui.components.ClipboardHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +79,8 @@ class CalculatorViewModel(
             }
             is CalculatorAction.ClearAll -> handleClearAll()
             is CalculatorAction.Calculate -> handleCalculate()
+            is CalculatorAction.Paste -> handlePaste(action.text)
+            is CalculatorAction.Cut -> handleCut()
             is CalculatorAction.ToggleScientificMode -> {
                 _state.update { it.copy(isScientificMode = !it.isScientificMode) }
             }
@@ -511,6 +514,32 @@ class CalculatorViewModel(
                 isResultCalculated = false
             )
         }
+    }
+
+    private fun handlePaste(rawText: String) {
+        val sanitized = ClipboardHelper.sanitizeCalculatorPaste(rawText)
+        if (sanitized.isEmpty()) return
+
+        if (_state.value.isResultCalculated) {
+            _state.update {
+                it.copy(
+                    expression = sanitized,
+                    cursorIndex = sanitized.length,
+                    finalResult = "",
+                    previewResult = "",
+                    errorMessage = null,
+                    isResultCalculated = false
+                )
+            }
+            updatePreview(sanitized)
+            return
+        }
+
+        insertAtCursor(sanitized, updatePreviewAfter = true)
+    }
+
+    private fun handleCut() {
+        handleClearAll()
     }
 
     private fun appendScientificFunction(func: String) {

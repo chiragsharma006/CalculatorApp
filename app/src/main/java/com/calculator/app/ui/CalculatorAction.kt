@@ -20,6 +20,8 @@ sealed interface CalculatorAction {
     data class MoveCursor(val newIndex: Int) : CalculatorAction
     data object ClearAll : CalculatorAction
     data object Calculate : CalculatorAction
+    data class Paste(val text: String) : CalculatorAction
+    data object Cut : CalculatorAction
 
     data object ToggleScientificMode : CalculatorAction
     data object ToggleAngleMode : CalculatorAction

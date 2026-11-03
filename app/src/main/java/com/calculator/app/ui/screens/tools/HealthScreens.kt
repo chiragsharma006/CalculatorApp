@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
@@ -26,8 +28,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.calculator.app.ui.components.ClipboardHelper
+import com.calculator.app.ui.components.CutCopyPastePopup
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -724,6 +734,10 @@ private fun SimpleInputField(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCalculatorColors.current
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
     Column(modifier = modifier) {
         Text(
@@ -737,7 +751,17 @@ private fun SimpleInputField(
             color = colors.background.copy(alpha = 0.6f),
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.dp, colors.textSecondary.copy(alpha = 0.2f)),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { offset ->
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            actionPopupOffset = offset
+                            showActionPopup = true
+                        }
+                    )
+                }
         ) {
             Row(
                 modifier = Modifier
@@ -783,8 +807,58 @@ private fun SimpleInputField(
                             modifier = Modifier.size(15.dp)
                         )
                     }
+                } else if (ClipboardHelper.hasClipboardText(context)) {
+                    IconButton(
+                        onClick = {
+                            val clip = ClipboardHelper.getClipboardText(context)
+                            if (clip != null) {
+                                val sanitized = ClipboardHelper.sanitizeDecimalPaste(clip)
+                                if (sanitized.isNotEmpty()) onValueChange(sanitized)
+                            }
+                        },
+                        modifier = Modifier.size(22.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentPaste,
+                            contentDescription = "Paste",
+                            tint = colors.operatorKeyText,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
                 }
             }
         }
+
+        val hasClipboard = remember(showActionPopup) {
+            if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+        }
+        CutCopyPastePopup(
+            visible = showActionPopup,
+            onDismissRequest = { showActionPopup = false },
+            anchorOffset = actionPopupOffset,
+            onCut = if (value.isNotEmpty()) {
+                {
+                    ClipboardHelper.cut(context, value)
+                    onValueChange("")
+                    showActionPopup = false
+                }
+            } else null,
+            onCopy = if (value.isNotEmpty()) {
+                {
+                    ClipboardHelper.copy(context, value)
+                    showActionPopup = false
+                }
+            } else null,
+            onPaste = if (hasClipboard) {
+                {
+                    val clip = ClipboardHelper.getClipboardText(context)
+                    if (clip != null) {
+                        val sanitized = ClipboardHelper.sanitizeDecimalPaste(clip)
+                        if (sanitized.isNotEmpty()) onValueChange(sanitized)
+                    }
+                    showActionPopup = false
+                }
+            } else null
+        )
     }
 }

@@ -50,6 +50,8 @@ import com.calculator.app.data.preferences.LocalNumberingSystem
 import com.calculator.app.domain.format.NumberFormatter
 import com.calculator.app.domain.tools.NumberBase
 import com.calculator.app.domain.tools.NumberSystemEngine
+import com.calculator.app.ui.components.ClipboardHelper
+import com.calculator.app.ui.components.CutCopyPastePopup
 import com.calculator.app.ui.components.cursorMagnifier
 import com.calculator.app.ui.components.getCursorRectSafe
 import com.calculator.app.ui.theme.LocalCalculatorColors
@@ -88,6 +90,31 @@ fun NumberSystemScreen(
     fun handleClear() {
         inputString = "0"
         cursorIndex = 1
+    }
+
+    fun handleCut() {
+        if (inputString.isNotEmpty()) {
+            ClipboardHelper.cut(context, inputString, selectedBase.name)
+            inputString = "0"
+            cursorIndex = 1
+        }
+    }
+
+    fun handlePaste(rawText: String) {
+        val sanitized = ClipboardHelper.sanitizeBasePaste(rawText, selectedBase)
+        if (sanitized.isNotEmpty()) {
+            val clamped = cursorIndex.coerceIn(0, inputString.length)
+            if (inputString == "0") {
+                inputString = sanitized
+                cursorIndex = sanitized.length
+            } else {
+                inputString = inputString.substring(0, clamped) + sanitized + inputString.substring(clamped)
+                cursorIndex = clamped + sanitized.length
+            }
+            Toast.makeText(context, "Pasted", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "No valid ${selectedBase.name} digits in clipboard", Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun handleBackspace() {
@@ -163,7 +190,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.HEXADECIMAL) inputString else result.hexadecimal,
                         isSelected = selectedBase == NumberBase.HEXADECIMAL,
                         onSelect = { selectBase(NumberBase.HEXADECIMAL) },
-                        onCopy = { copyToClipboard(context, result.hexadecimal, "HEX") },
+                        onCopy = { ClipboardHelper.copy(context, result.hexadecimal, "HEX") },
+                        onCut = if (selectedBase == NumberBase.HEXADECIMAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.HEXADECIMAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -172,7 +201,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.DECIMAL) inputString else result.decimal,
                         isSelected = selectedBase == NumberBase.DECIMAL,
                         onSelect = { selectBase(NumberBase.DECIMAL) },
-                        onCopy = { copyToClipboard(context, result.decimal, "DEC") },
+                        onCopy = { ClipboardHelper.copy(context, result.decimal, "DEC") },
+                        onCut = if (selectedBase == NumberBase.DECIMAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.DECIMAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -181,7 +212,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.OCTAL) inputString else result.octal,
                         isSelected = selectedBase == NumberBase.OCTAL,
                         onSelect = { selectBase(NumberBase.OCTAL) },
-                        onCopy = { copyToClipboard(context, result.octal, "OCT") },
+                        onCopy = { ClipboardHelper.copy(context, result.octal, "OCT") },
+                        onCut = if (selectedBase == NumberBase.OCTAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.OCTAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -190,7 +223,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.BINARY) inputString else result.binary,
                         isSelected = selectedBase == NumberBase.BINARY,
                         onSelect = { selectBase(NumberBase.BINARY) },
-                        onCopy = { copyToClipboard(context, result.binary, "BIN") },
+                        onCopy = { ClipboardHelper.copy(context, result.binary, "BIN") },
+                        onCut = if (selectedBase == NumberBase.BINARY) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.BINARY) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -239,7 +274,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.HEXADECIMAL) inputString else result.hexadecimal,
                         isSelected = selectedBase == NumberBase.HEXADECIMAL,
                         onSelect = { selectBase(NumberBase.HEXADECIMAL) },
-                        onCopy = { copyToClipboard(context, result.hexadecimal, "HEX") },
+                        onCopy = { ClipboardHelper.copy(context, result.hexadecimal, "HEX") },
+                        onCut = if (selectedBase == NumberBase.HEXADECIMAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.HEXADECIMAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -248,7 +285,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.DECIMAL) inputString else result.decimal,
                         isSelected = selectedBase == NumberBase.DECIMAL,
                         onSelect = { selectBase(NumberBase.DECIMAL) },
-                        onCopy = { copyToClipboard(context, result.decimal, "DEC") },
+                        onCopy = { ClipboardHelper.copy(context, result.decimal, "DEC") },
+                        onCut = if (selectedBase == NumberBase.DECIMAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.DECIMAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -257,7 +296,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.OCTAL) inputString else result.octal,
                         isSelected = selectedBase == NumberBase.OCTAL,
                         onSelect = { selectBase(NumberBase.OCTAL) },
-                        onCopy = { copyToClipboard(context, result.octal, "OCT") },
+                        onCopy = { ClipboardHelper.copy(context, result.octal, "OCT") },
+                        onCut = if (selectedBase == NumberBase.OCTAL) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.OCTAL) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -266,7 +307,9 @@ fun NumberSystemScreen(
                         value = if (selectedBase == NumberBase.BINARY) inputString else result.binary,
                         isSelected = selectedBase == NumberBase.BINARY,
                         onSelect = { selectBase(NumberBase.BINARY) },
-                        onCopy = { copyToClipboard(context, result.binary, "BIN") },
+                        onCopy = { ClipboardHelper.copy(context, result.binary, "BIN") },
+                        onCut = if (selectedBase == NumberBase.BINARY) ::handleCut else null,
+                        onPaste = if (selectedBase == NumberBase.BINARY) ::handlePaste else null,
                         cursorIndex = cursorIndex,
                         onCursorChange = { cursorIndex = it }
                     )
@@ -301,9 +344,12 @@ private fun BaseDisplayCard(
     isSelected: Boolean,
     onSelect: () -> Unit,
     onCopy: () -> Unit,
+    onCut: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null,
     cursorIndex: Int = 0,
     onCursorChange: ((Int) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val colors = LocalCalculatorColors.current
     val numberingSystem = LocalNumberingSystem.current
     val density = LocalDensity.current
@@ -315,6 +361,8 @@ private fun BaseDisplayCard(
 
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var isDraggingCursor by remember { mutableStateOf(false) }
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
     val formattedRes = remember(value, numberingSystem) {
         if (base == NumberBase.DECIMAL) {
@@ -458,24 +506,44 @@ private fun BaseDisplayCard(
 
                                     if (isHandleHit) {
                                         down.consume()
-                                        isDraggingCursor = true
-                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-
+                                        var hasDragged = false
                                         val pointerId = down.id
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
                                             if (change.pressed) {
-                                                change.consume()
-                                                updateCursor(change.position)
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop) {
+                                                    if (!hasDragged) {
+                                                        hasDragged = true
+                                                        isDraggingCursor = true
+                                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                    change.consume()
+                                                    updateCursor(change.position)
+                                                }
                                             } else {
                                                 break
                                             }
                                         }
                                         isDraggingCursor = false
+
+                                        if (!hasDragged) {
+                                            val hasClip = ClipboardHelper.hasClipboardText(context)
+                                            val canCutOrCopy = currentBaseValue.isNotEmpty()
+                                            if (canCutOrCopy || hasClip) {
+                                                currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                actionPopupOffset = handleCenter ?: down.position
+                                                showActionPopup = true
+                                            }
+                                        }
                                     } else {
                                         val pointerId = down.id
                                         var moved = false
+                                        var isLongPress = false
+                                        val longPressTimeout = viewConfig.longPressTimeoutMillis
+                                        val startTime = System.currentTimeMillis()
+
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
@@ -483,10 +551,22 @@ private fun BaseDisplayCard(
                                                 val dist = (change.position - down.position).getDistance()
                                                 if (dist > viewConfig.touchSlop || change.isConsumed) {
                                                     moved = true
+                                                    showActionPopup = false
+                                                } else if (!moved && !isLongPress && (System.currentTimeMillis() - startTime >= longPressTimeout)) {
+                                                    isLongPress = true
+                                                    currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    updateCursor(down.position)
+                                                    val hasClip = ClipboardHelper.hasClipboardText(context)
+                                                    val canCutOrCopy = currentBaseValue.isNotEmpty()
+                                                    if (canCutOrCopy || hasClip) {
+                                                        actionPopupOffset = down.position
+                                                        showActionPopup = true
+                                                    }
                                                 }
                                             } else {
-                                                if (!moved && !change.isConsumed) {
+                                                if (!moved && !isLongPress && !change.isConsumed) {
                                                     updateCursor(down.position)
+                                                    showActionPopup = false
                                                 }
                                                 break
                                             }
@@ -551,6 +631,38 @@ private fun BaseDisplayCard(
             }
         }
     }
+
+    val hasClipboard = remember(showActionPopup) {
+        if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+    }
+    val canCopyOrCut = value.isNotEmpty() && value != "0"
+
+    CutCopyPastePopup(
+        visible = showActionPopup && isSelected,
+        onDismissRequest = { showActionPopup = false },
+        anchorOffset = actionPopupOffset,
+        onCut = if (canCopyOrCut && onCut != null) {
+            {
+                onCut.invoke()
+                showActionPopup = false
+            }
+        } else null,
+        onCopy = if (value.isNotEmpty()) {
+            {
+                onCopy.invoke()
+                showActionPopup = false
+            }
+        } else null,
+        onPaste = if (hasClipboard && onPaste != null) {
+            {
+                val text = ClipboardHelper.getClipboardText(context)
+                if (text != null) {
+                    onPaste.invoke(text)
+                }
+                showActionPopup = false
+            }
+        } else null
+    )
 }
 
 @Composable

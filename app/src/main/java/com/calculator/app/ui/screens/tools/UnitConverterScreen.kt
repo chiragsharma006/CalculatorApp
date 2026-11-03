@@ -67,6 +67,8 @@ import com.calculator.app.domain.format.NumberFormatter
 import com.calculator.app.domain.tools.UnitCategory
 import com.calculator.app.domain.tools.UnitConverterEngine
 import com.calculator.app.domain.tools.UnitItem
+import com.calculator.app.ui.components.ClipboardHelper
+import com.calculator.app.ui.components.CutCopyPastePopup
 import com.calculator.app.ui.components.cursorMagnifier
 import com.calculator.app.ui.components.getCursorRectSafe
 import com.calculator.app.ui.theme.LocalCalculatorColors
@@ -171,6 +173,29 @@ fun UnitConverterScreen(
         inputCursorIndex = 1
     }
 
+    fun handleCut() {
+        if (inputValue.isNotEmpty()) {
+            ClipboardHelper.cut(context, inputValue)
+            inputValue = "0"
+            inputCursorIndex = 1
+        }
+    }
+
+    fun handlePaste(rawText: String) {
+        val sanitized = ClipboardHelper.sanitizeDecimalPaste(rawText)
+        if (sanitized.isNotEmpty()) {
+            val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
+            if (inputValue == "0") {
+                inputValue = sanitized
+                inputCursorIndex = sanitized.length
+            } else {
+                inputValue = inputValue.substring(0, clamped) + sanitized + inputValue.substring(clamped)
+                inputCursorIndex = clamped + sanitized.length
+            }
+            Toast.makeText(context, "Pasted", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun handleBackspace() {
         val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
         if (clamped > 0) {
@@ -264,7 +289,9 @@ fun UnitConverterScreen(
                         context = context,
                         swapTrigger = swapAnimationCount,
                         cursorIndex = inputCursorIndex,
-                        onCursorChange = { inputCursorIndex = it }
+                        onCursorChange = { inputCursorIndex = it },
+                        onCut = ::handleCut,
+                        onPaste = ::handlePaste
                     )
 
                     // Sleek single-line live currency banner directly below "To" section, with NO background
@@ -344,7 +371,9 @@ fun UnitConverterScreen(
                         context = context,
                         swapTrigger = swapAnimationCount,
                         cursorIndex = inputCursorIndex,
-                        onCursorChange = { inputCursorIndex = it }
+                        onCursorChange = { inputCursorIndex = it },
+                        onCut = ::handleCut,
+                        onPaste = ::handlePaste
                     )
 
                     // Sleek single-line live currency banner directly below "To" section, with NO background
@@ -436,6 +465,8 @@ private fun MergedConversionCard(
     swapTrigger: Int = 0,
     cursorIndex: Int = 0,
     onCursorChange: ((Int) -> Unit)? = null,
+    onCut: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCalculatorColors.current
@@ -490,6 +521,8 @@ private fun MergedConversionCard(
                         val formatted = NumberFormatter.formatNumber(fromDisplayValue, system)
                         copyText(context, formatted, "${fromUnit.name} (${fromUnit.symbol})")
                     },
+                    onCut = if (activeTarget == ActiveUnitField.FROM) onCut else null,
+                    onPaste = if (activeTarget == ActiveUnitField.FROM) onPaste else null,
                     cursorIndex = if (activeTarget == ActiveUnitField.FROM) cursorIndex else 0,
                     onCursorChange = if (activeTarget == ActiveUnitField.FROM) onCursorChange else null
                 )
@@ -523,6 +556,8 @@ private fun MergedConversionCard(
                         val formatted = NumberFormatter.formatNumber(toDisplayValue, system)
                         copyText(context, formatted, "${toUnit.name} (${toUnit.symbol})")
                     },
+                    onCut = if (activeTarget == ActiveUnitField.TO) onCut else null,
+                    onPaste = if (activeTarget == ActiveUnitField.TO) onPaste else null,
                     cursorIndex = if (activeTarget == ActiveUnitField.TO) cursorIndex else 0,
                     onCursorChange = if (activeTarget == ActiveUnitField.TO) onCursorChange else null
                 )
@@ -541,9 +576,12 @@ private fun ConversionUnitRow(
     isActive: Boolean,
     onClick: () -> Unit,
     onCopy: () -> Unit,
+    onCut: (() -> Unit)? = null,
+    onPaste: ((String) -> Unit)? = null,
     cursorIndex: Int = 0,
     onCursorChange: ((Int) -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val colors = LocalCalculatorColors.current
     val system = LocalNumberingSystem.current
     val density = LocalDensity.current
@@ -555,6 +593,8 @@ private fun ConversionUnitRow(
 
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
     var isDraggingCursor by remember { mutableStateOf(false) }
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
     val formattedRes = remember(displayValue, system) {
         NumberFormatter.formatExpression(displayValue, system)
@@ -670,25 +710,45 @@ private fun ConversionUnitRow(
                                     if (isHandleHit) {
                                         // User specifically grabbed the droplet handle
                                         down.consume()
-                                        isDraggingCursor = true
-                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-
+                                        var hasDragged = false
                                         val pointerId = down.id
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
                                             if (change.pressed) {
-                                                change.consume()
-                                                updateCursor(change.position)
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop) {
+                                                    if (!hasDragged) {
+                                                        hasDragged = true
+                                                        isDraggingCursor = true
+                                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                    change.consume()
+                                                    updateCursor(change.position)
+                                                }
                                             } else {
                                                 break
                                             }
                                         }
                                         isDraggingCursor = false
+
+                                        if (!hasDragged) {
+                                            val hasClip = ClipboardHelper.hasClipboardText(context)
+                                            val canCutOrCopy = currentDisplayValue.isNotEmpty()
+                                            if (canCutOrCopy || hasClip) {
+                                                currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                actionPopupOffset = handleCenter ?: down.position
+                                                showActionPopup = true
+                                            }
+                                        }
                                     } else {
-                                        // Touched text: detect tap without scrolling/dragging
+                                        // Touched text: detect tap or long press
                                         val pointerId = down.id
                                         var moved = false
+                                        var isLongPress = false
+                                        val longPressTimeout = viewConfig.longPressTimeoutMillis
+                                        val startTime = System.currentTimeMillis()
+
                                         while (true) {
                                             val event = awaitPointerEvent()
                                             val change = event.changes.find { it.id == pointerId } ?: break
@@ -696,10 +756,22 @@ private fun ConversionUnitRow(
                                                 val dist = (change.position - down.position).getDistance()
                                                 if (dist > viewConfig.touchSlop || change.isConsumed) {
                                                     moved = true
+                                                    showActionPopup = false
+                                                } else if (!moved && !isLongPress && (System.currentTimeMillis() - startTime >= longPressTimeout)) {
+                                                    isLongPress = true
+                                                    currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    updateCursor(down.position)
+                                                    val hasClip = ClipboardHelper.hasClipboardText(context)
+                                                    val canCutOrCopy = currentDisplayValue.isNotEmpty()
+                                                    if (canCutOrCopy || hasClip) {
+                                                        actionPopupOffset = down.position
+                                                        showActionPopup = true
+                                                    }
                                                 }
                                             } else {
-                                                if (!moved && !change.isConsumed) {
+                                                if (!moved && !isLongPress && !change.isConsumed) {
                                                     updateCursor(down.position)
+                                                    showActionPopup = false
                                                 }
                                                 break
                                             }
@@ -772,6 +844,38 @@ private fun ConversionUnitRow(
             }
         }
     }
+
+    val hasClipboard = remember(showActionPopup) {
+        if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+    }
+    val canCopyOrCut = displayValue.isNotEmpty() && displayValue != "0"
+
+    CutCopyPastePopup(
+        visible = showActionPopup && isActive,
+        onDismissRequest = { showActionPopup = false },
+        anchorOffset = actionPopupOffset,
+        onCut = if (canCopyOrCut && onCut != null) {
+            {
+                onCut.invoke()
+                showActionPopup = false
+            }
+        } else null,
+        onCopy = if (displayValue.isNotEmpty()) {
+            {
+                onCopy.invoke()
+                showActionPopup = false
+            }
+        } else null,
+        onPaste = if (hasClipboard && onPaste != null) {
+            {
+                val text = ClipboardHelper.getClipboardText(context)
+                if (text != null) {
+                    onPaste.invoke(text)
+                }
+                showActionPopup = false
+            }
+        } else null
+    )
 }
 
 @Composable

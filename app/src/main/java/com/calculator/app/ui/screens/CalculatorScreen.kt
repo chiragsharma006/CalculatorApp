@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Calculate
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -28,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,7 @@ import com.calculator.app.ui.CalculatorAction
 import com.calculator.app.ui.CalculatorState
 import com.calculator.app.ui.components.AppInfoDialog
 import com.calculator.app.ui.components.CalculatorButton
+import com.calculator.app.ui.components.ClipboardHelper
 import com.calculator.app.ui.components.DisplaySection
 import com.calculator.app.ui.components.HistoryBottomSheet
 import com.calculator.app.ui.components.KeypadSection
@@ -54,6 +58,7 @@ fun CalculatorScreen(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCalculatorColors.current
+    val context = LocalContext.current
     var isMenuExpanded by remember { mutableStateOf(false) }
 
     val configuration = LocalConfiguration.current
@@ -223,6 +228,95 @@ fun CalculatorScreen(
                                 }
                             )
 
+                            // 4. Copy & Paste Quick Actions
+                            val hasClip = ClipboardHelper.hasClipboardText(context)
+                            val canCopy = state.expression.isNotEmpty() || (state.isResultCalculated && state.finalResult.isNotEmpty())
+                            if (canCopy) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = "Copy",
+                                                color = colors.textPrimary,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 15.sp
+                                            )
+                                            Text(
+                                                text = "Copy equation or result",
+                                                color = colors.textSecondary,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFF06B6D4).copy(alpha = 0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentCopy,
+                                                contentDescription = null,
+                                                tint = Color(0xFF06B6D4),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                    onClick = {
+                                        isMenuExpanded = false
+                                        val text = if (state.isResultCalculated && state.finalResult.isNotEmpty()) state.finalResult else state.expression
+                                        ClipboardHelper.copy(context, text)
+                                    }
+                                )
+                            }
+
+                            if (hasClip) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(
+                                                text = "Paste",
+                                                color = colors.textPrimary,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 15.sp
+                                            )
+                                            Text(
+                                                text = "Paste from clipboard",
+                                                color = colors.textSecondary,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(Color(0xFFEC4899).copy(alpha = 0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ContentPaste,
+                                                contentDescription = null,
+                                                tint = Color(0xFFEC4899),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                    onClick = {
+                                        isMenuExpanded = false
+                                        val clipText = ClipboardHelper.getClipboardText(context)
+                                        if (clipText != null) {
+                                            onAction(CalculatorAction.Paste(clipText))
+                                        }
+                                    }
+                                )
+                            }
+
                             HorizontalDivider(
                                 color = colors.textSecondary.copy(alpha = 0.12f),
                                 thickness = 1.dp,
@@ -310,6 +404,12 @@ fun CalculatorScreen(
                             onCursorChange = { onAction(CalculatorAction.MoveCursor(it)) },
                             numberingSystem = state.numberingSystem,
                             isLandscape = true,
+                            onCut = { onAction(CalculatorAction.Cut) },
+                            onCopy = {
+                                val text = if (state.isResultCalculated && state.finalResult.isNotEmpty()) state.finalResult else state.expression
+                                ClipboardHelper.copy(context, text)
+                            },
+                            onPaste = { onAction(CalculatorAction.Paste(it)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -407,6 +507,12 @@ fun CalculatorScreen(
                     onCursorChange = { onAction(CalculatorAction.MoveCursor(it)) },
                     numberingSystem = state.numberingSystem,
                     isLandscape = false,
+                    onCut = { onAction(CalculatorAction.Cut) },
+                    onCopy = {
+                        val text = if (state.isResultCalculated && state.finalResult.isNotEmpty()) state.finalResult else state.expression
+                        ClipboardHelper.copy(context, text)
+                    },
+                    onPaste = { onAction(CalculatorAction.Paste(it)) },
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
