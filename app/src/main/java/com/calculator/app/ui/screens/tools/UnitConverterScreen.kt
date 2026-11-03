@@ -68,6 +68,7 @@ import com.calculator.app.domain.tools.UnitCategory
 import com.calculator.app.domain.tools.UnitConverterEngine
 import com.calculator.app.domain.tools.UnitItem
 import com.calculator.app.ui.components.MagnifierPopup
+import com.calculator.app.ui.components.getCursorRectSafe
 import com.calculator.app.ui.theme.LocalCalculatorColors
 import kotlinx.coroutines.launch
 
@@ -636,7 +637,7 @@ private fun ConversionUnitRow(
                 BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                     val containerWidthPx = with(density) { maxWidth.toPx() }
                     val clamped = formattedCursorIndex.coerceIn(0, formattedDisplay.length)
-                    val rect = textLayoutResult?.getCursorRect(clamped)
+                    val rect = if (isDraggingCursor) textLayoutResult.getCursorRectSafe(clamped) else null
                     val cursorScreenX = (rect?.left ?: 0f) + horizontalInsetPx
 
                     Box(
@@ -650,7 +651,7 @@ private fun ConversionUnitRow(
                                         val down = awaitFirstDown(requireUnconsumed = false)
                                         val layout = currentTextLayoutResult
                                         val currentClamped = currentFormattedCursorIndex.coerceIn(0, currentFormattedDisplay.length)
-                                        val currentRect = layout?.getCursorRect(currentClamped)
+                                        val currentRect = layout.getCursorRectSafe(currentClamped)
 
                                         val handleRadius = 7.5.dp.toPx()
                                         val handleCenter = if (currentRect != null) {
@@ -705,7 +706,7 @@ private fun ConversionUnitRow(
                                 drawContent()
                                 if (isActive) {
                                     val currentClamped = formattedCursorIndex.coerceIn(0, formattedDisplay.length)
-                                    val cursorRect = textLayoutResult?.getCursorRect(currentClamped)
+                                    val cursorRect = textLayoutResult.getCursorRectSafe(currentClamped)
                                     if (cursorRect != null) {
                                         val effectiveAlpha = if (isDraggingCursor) 1f else cursorAlpha
                                         val cursorWidth = if (isDraggingCursor) 3.dp.toPx() else 2.5.dp.toPx()

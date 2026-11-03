@@ -17,10 +17,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -29,6 +31,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.calculator.app.ui.theme.LocalCalculatorColors
 import kotlin.math.roundToInt
+
+/**
+ * Safely queries the cursor rectangle from a [TextLayoutResult] without throwing
+ * [IllegalArgumentException] when layout is stale or recomposition occurs before layout.
+ */
+fun TextLayoutResult?.getCursorRectSafe(offset: Int): Rect? {
+    if (this == null) return null
+    val textLen = layoutInput.text.length
+    if (textLen < 0) return null
+    val safeOffset = offset.coerceIn(0, textLen)
+    return try {
+        getCursorRect(safeOffset)
+    } catch (_: Throwable) {
+        null
+    }
+}
 
 /**
  * Floating magnified loupe bubble that appears directly above the cursor while dragging.
@@ -51,15 +69,20 @@ fun MagnifierPopup(
 
     var popupWidthPx by remember { mutableFloatStateOf(0f) }
 
-    val clampedCursor = cursorIndex.coerceIn(0, displayText.length)
+    val textLength = displayText.length
+    val clampedCursor = if (textLength > 0) cursorIndex.coerceIn(0, textLength) else 0
     val windowRadius = 4
     val start = (clampedCursor - windowRadius).coerceAtLeast(0)
-    val end = (clampedCursor + windowRadius).coerceAtMost(displayText.length)
+    val end = (clampedCursor + windowRadius).coerceAtMost(textLength)
 
-    val beforeText = displayText.substring(start, clampedCursor)
-    val afterText = displayText.substring(clampedCursor, end)
+    val beforeText = if (textLength > 0 && start in 0..clampedCursor && clampedCursor <= textLength) {
+        displayText.substring(start, clampedCursor)
+    } else ""
+    val afterText = if (textLength > 0 && clampedCursor in 0..end && end <= textLength) {
+        displayText.substring(clampedCursor, end)
+    } else ""
     val hasMoreBefore = start > 0
-    val hasMoreAfter = end < displayText.length
+    val hasMoreAfter = end < textLength
 
     val marginPx = with(density) { 8.dp.toPx() }
     val yOffsetPx = with(density) { yOffset.toPx() }.roundToInt()

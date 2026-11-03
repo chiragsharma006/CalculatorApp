@@ -121,16 +121,20 @@ fun DisplaySection(
         val layout = textLayoutResult
         if (layout != null && displayText.isNotEmpty()) {
             val clamped = formattedCursorIndex.coerceIn(0, displayText.length)
-            val rect = layout.getCursorRect(clamped)
-            val cursorX = rect.left + horizontalInsetPx
-            val viewportSize = scrollState.viewportSize
-            if (viewportSize > 0) {
-                val currentScroll = scrollState.value
-                if (cursorX < currentScroll + 50) {
-                    scrollState.animateScrollTo((cursorX - 70).toInt().coerceAtLeast(0))
-                } else if (cursorX > currentScroll + viewportSize - 50) {
-                    scrollState.animateScrollTo((cursorX - viewportSize + 70).toInt().coerceAtMost(scrollState.maxValue))
+            val rect = layout.getCursorRectSafe(clamped)
+            if (rect != null) {
+                val cursorX = rect.left + horizontalInsetPx
+                val viewportSize = scrollState.viewportSize
+                if (viewportSize > 0) {
+                    val currentScroll = scrollState.value
+                    if (cursorX < currentScroll + 50) {
+                        scrollState.animateScrollTo((cursorX - 70).toInt().coerceAtLeast(0))
+                    } else if (cursorX > currentScroll + viewportSize - 50) {
+                        scrollState.animateScrollTo((cursorX - viewportSize + 70).toInt().coerceAtMost(scrollState.maxValue))
+                    }
                 }
+            } else {
+                scrollState.animateScrollTo(scrollState.maxValue)
             }
         } else {
             scrollState.animateScrollTo(scrollState.maxValue)
@@ -173,7 +177,7 @@ fun DisplaySection(
             val minWidth = maxWidth
             val containerWidthPx = with(density) { maxWidth.toPx() }
             val clamped = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
-            val rect = textLayoutResult?.getCursorRect(clamped)
+            val rect = if (isDraggingCursor) textLayoutResult.getCursorRectSafe(clamped) else null
             val cursorScreenX = (rect?.left ?: 0f) + horizontalInsetPx - scrollState.value
 
             Row(
@@ -193,7 +197,7 @@ fun DisplaySection(
                                     val down = awaitFirstDown(requireUnconsumed = false)
                                     val layout = currentTextLayoutResult
                                     val currentClamped = if (currentIsPlaceholder) 1 else currentFormattedCursorIndex.coerceIn(0, currentDisplayText.length)
-                                    val currentRect = layout?.getCursorRect(currentClamped)
+                                    val currentRect = layout.getCursorRectSafe(currentClamped)
 
                                     val handleRadius = 8.dp.toPx()
                                     val handleCenter = if (currentRect != null) {
@@ -251,7 +255,7 @@ fun DisplaySection(
                             drawContent()
                             if (showCursor) {
                                 val clampedIndex = if (isPlaceholder) 1 else formattedCursorIndex.coerceIn(0, displayText.length)
-                                val cursorRect = textLayoutResult?.getCursorRect(clampedIndex)
+                                val cursorRect = textLayoutResult.getCursorRectSafe(clampedIndex)
                                 if (cursorRect != null) {
                                     val effectiveAlpha = if (isDraggingCursor) 1f else cursorAlpha
                                     val cursorWidth = if (isDraggingCursor) 3.dp.toPx() else 2.5.dp.toPx()
