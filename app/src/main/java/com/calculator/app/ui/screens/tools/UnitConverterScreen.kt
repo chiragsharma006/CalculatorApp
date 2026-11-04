@@ -140,6 +140,10 @@ fun UnitConverterScreen(
             inputValue = digit
             inputCursorIndex = digit.length
             isExampleValue = false
+        } else if (inputValue == "-") {
+            inputValue = "-$digit"
+            inputCursorIndex = 2
+            isExampleValue = false
         } else if (inputValue.length < 15) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
             inputValue = inputValue.substring(0, clamped) + digit + inputValue.substring(clamped)
@@ -151,6 +155,10 @@ fun UnitConverterScreen(
         if (isExampleValue) {
             inputValue = "0."
             inputCursorIndex = 2
+            isExampleValue = false
+        } else if (inputValue == "-") {
+            inputValue = "-0."
+            inputCursorIndex = 3
             isExampleValue = false
         } else if (!inputValue.contains('.')) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
@@ -164,7 +172,7 @@ fun UnitConverterScreen(
             inputValue = "0"
             inputCursorIndex = 1
             isExampleValue = false
-        } else if (inputValue != "0" && inputValue.length < 14) {
+        } else if (inputValue != "0" && inputValue != "-" && inputValue.length < 14) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
             inputValue = inputValue.substring(0, clamped) + "00" + inputValue.substring(clamped)
             inputCursorIndex = clamped + 2
@@ -176,8 +184,15 @@ fun UnitConverterScreen(
         if (inputValue.startsWith("-")) {
             inputValue = inputValue.removePrefix("-")
             inputCursorIndex = (inputCursorIndex - 1).coerceAtLeast(0)
-        } else if (inputValue != "0" && inputValue.isNotEmpty()) {
-            inputValue = "-`$inputValue"
+            if (inputValue.isEmpty()) {
+                inputValue = "0"
+                inputCursorIndex = 1
+            }
+        } else if (inputValue == "0") {
+            inputValue = "-"
+            inputCursorIndex = 1
+        } else if (inputValue.isNotEmpty()) {
+            inputValue = "-$inputValue"
             inputCursorIndex = inputCursorIndex + 1
         }
     }
@@ -214,12 +229,7 @@ fun UnitConverterScreen(
     }
 
     fun handleBackspace() {
-        if (isExampleValue) {
-            inputValue = "0"
-            inputCursorIndex = 1
-            isExampleValue = false
-            return
-        }
+        isExampleValue = false
         val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
         if (clamped > 0) {
             inputValue = inputValue.removeRange(clamped - 1, clamped)
