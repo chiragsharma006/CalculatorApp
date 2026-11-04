@@ -47,6 +47,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -132,7 +134,7 @@ fun UnitConverterScreen(
 
     var inputValue by remember(selectedCategory) { mutableStateOf("1") }
     var isExampleValue by remember(selectedCategory) { mutableStateOf(true) }
-    var inputCursorIndex by remember(activeTarget) { mutableIntStateOf(1) }
+    var inputCursorIndex by remember(selectedCategory) { mutableIntStateOf(1) }
     val numericInput = inputValue.toDoubleOrNull() ?: 0.0
 
     fun handleDigit(digit: String) {
@@ -269,6 +271,23 @@ fun UnitConverterScreen(
         }
     }
 
+    val handleSwap: () -> Unit = {
+        swapAnimationCount++
+        val prevFromDisplay = fromDisplayValue
+        val prevToDisplay = toDisplayValue
+        val temp = fromUnit
+        fromUnit = toUnit
+        toUnit = temp
+        if (activeTarget == ActiveUnitField.FROM) {
+            inputValue = prevToDisplay
+            inputCursorIndex = prevToDisplay.length
+        } else {
+            inputValue = prevFromDisplay
+            inputCursorIndex = prevFromDisplay.length
+            activeTarget = ActiveUnitField.FROM
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = colors.background,
@@ -366,12 +385,7 @@ fun UnitConverterScreen(
                     onToggleSign = ::handleToggleSign,
                     onClear = ::handleClear,
                     onBackspace = ::handleBackspace,
-                    onSwap = {
-                        swapAnimationCount++
-                        val temp = fromUnit
-                        fromUnit = toUnit
-                        toUnit = temp
-                    },
+                    onSwap = handleSwap,
                     swapTrigger = swapAnimationCount,
                     isLandscape = true,
                     modifier = Modifier
@@ -443,12 +457,7 @@ fun UnitConverterScreen(
                     onToggleSign = ::handleToggleSign,
                     onClear = ::handleClear,
                     onBackspace = ::handleBackspace,
-                    onSwap = {
-                        swapAnimationCount++
-                        val temp = fromUnit
-                        fromUnit = toUnit
-                        toUnit = temp
-                    },
+                    onSwap = handleSwap,
                     swapTrigger = swapAnimationCount,
                     isLandscape = false,
                     modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
@@ -530,11 +539,8 @@ private fun MergedConversionCard(
         }
     }
 
-    val travelDistancePx = with(density) { 36.dp.toPx() }
-    val fromTranslationY = swapAnim.value * travelDistancePx
-    val toTranslationY = -swapAnim.value * travelDistancePx
-    val animAlpha = 1f - (swapAnim.value * 0.35f)
-    val animScale = 1f - (swapAnim.value * 0.04f)
+    val animAlpha = 1f - (swapAnim.value * 0.25f)
+    val animScale = 1f - (swapAnim.value * 0.02f)
 
     Surface(
         color = colors.surface,
@@ -546,7 +552,6 @@ private fun MergedConversionCard(
             // FROM ROW with Swap Motion
             Box(
                 modifier = Modifier.graphicsLayer {
-                    translationY = fromTranslationY
                     alpha = animAlpha
                     scaleX = animScale
                     scaleY = animScale
@@ -581,7 +586,6 @@ private fun MergedConversionCard(
             // TO ROW with Swap Motion
             Box(
                 modifier = Modifier.graphicsLayer {
-                    translationY = toTranslationY
                     alpha = animAlpha
                     scaleX = animScale
                     scaleY = animScale
@@ -627,6 +631,15 @@ private fun ConversionUnitRow(
     val context = LocalContext.current
     val colors = LocalCalculatorColors.current
     val system = LocalNumberingSystem.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isActive) {
+        if (isActive) {
+            try {
+                focusRequester.requestFocus()
+            } catch (_: Throwable) {}
+        }
+    }
 
     var textFieldValue by remember(displayValue, cursorIndex) {
         val clamped = cursorIndex.coerceIn(0, displayValue.length)
@@ -646,7 +659,12 @@ private fun ConversionUnitRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(onClick = {
+                onClick()
+                try {
+                    focusRequester.requestFocus()
+                } catch (_: Throwable) {}
+            })
             .padding(vertical = 3.dp)
     ) {
         Row(
@@ -720,7 +738,9 @@ private fun ConversionUnitRow(
                                     innerTextField()
                                 }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester)
                         )
                     }
                 } else {
