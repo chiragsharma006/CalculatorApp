@@ -1,7 +1,9 @@
 package com.calculator.app
 
+import androidx.compose.ui.text.AnnotatedString
 import com.calculator.app.data.preferences.NumberingSystem
 import com.calculator.app.domain.format.NumberFormatter
+import com.calculator.app.ui.components.ExpressionVisualTransformation
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -62,5 +64,35 @@ class NumberFormatterTest {
         val raw = "sin(45) + 100000"
         val indianRes = NumberFormatter.formatExpression(raw, NumberingSystem.INDIAN)
         assertEquals("sin(45) + 1,00,000", indianRes.formattedText)
+    }
+
+    @Test
+    fun testExpressionVisualTransformationOffsetMapping() {
+        val transform = ExpressionVisualTransformation(NumberingSystem.INTERNATIONAL)
+        val rawText = "888"
+        val result = transform.filter(AnnotatedString(rawText))
+        val offsetMapping = result.offsetMapping
+
+        // Original "888" -> Transformed "888\u2009"
+        assertEquals("888\u2009", result.text.text)
+
+        // Offset 0: before first 8
+        assertEquals(0, offsetMapping.originalToTransformed(0))
+        assertEquals(0, offsetMapping.transformedToOriginal(0))
+
+        // Offset 1: between 1st and 2nd 8
+        assertEquals(1, offsetMapping.originalToTransformed(1))
+        assertEquals(1, offsetMapping.transformedToOriginal(1))
+
+        // Offset 2: between 2nd and 3rd 8 (Image 1 case)
+        assertEquals(2, offsetMapping.originalToTransformed(2))
+        assertEquals(2, offsetMapping.transformedToOriginal(2))
+
+        // Offset 3: after 3rd 8 (Image 2 case) - maps before trailing \u2009
+        assertEquals(3, offsetMapping.originalToTransformed(3))
+        assertEquals(3, offsetMapping.transformedToOriginal(3))
+
+        // Clicking on or after the trailing space also resolves to the end of the raw text
+        assertEquals(3, offsetMapping.transformedToOriginal(4))
     }
 }

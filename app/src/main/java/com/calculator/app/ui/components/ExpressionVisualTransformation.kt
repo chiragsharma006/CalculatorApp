@@ -20,15 +20,25 @@ class ExpressionVisualTransformation(
             return TransformedText(text, OffsetMapping.Identity)
         }
         val result = NumberFormatter.formatExpression(text.text, system)
+        // Append a thin space (\u2009) so that when the cursor is at the very end of the expression,
+        // it is treated as an internal position (identical to when positioned between characters, as in Image 1),
+        // preventing Android Compose's text layout from clamping or misaligning the cursor bar with the drop handle.
+        val transformed = result.formattedText + "\u2009"
         val offsetMapping = object : OffsetMapping {
             override fun originalToTransformed(offset: Int): Int {
-                return NumberFormatter.rawToFormattedIndex(offset, result)
+                val clamped = offset.coerceIn(0, text.text.length)
+                val mapped = NumberFormatter.rawToFormattedIndex(clamped, result)
+                return mapped.coerceAtMost(result.formattedText.length)
             }
 
             override fun transformedToOriginal(offset: Int): Int {
-                return NumberFormatter.formattedToRawIndex(offset, result)
+                val clamped = offset.coerceIn(0, transformed.length)
+                if (clamped >= result.formattedText.length) {
+                    return text.text.length
+                }
+                return NumberFormatter.formattedToRawIndex(clamped, result)
             }
         }
-        return TransformedText(AnnotatedString(result.formattedText), offsetMapping)
+        return TransformedText(AnnotatedString(transformed), offsetMapping)
     }
 }

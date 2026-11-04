@@ -22,6 +22,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -118,9 +119,14 @@ fun DisplaySection(
                     singleLine = true,
                     textStyle = TextStyle(
                         fontSize = exprFontSize,
+                        lineHeight = exprFontSize * 1.15f,
                         fontWeight = FontWeight.Medium,
                         color = colors.textPrimary,
-                        textAlign = TextAlign.End
+                        textAlign = TextAlign.End,
+                        lineHeightStyle = LineHeightStyle(
+                            alignment = LineHeightStyle.Alignment.Center,
+                            trim = LineHeightStyle.Trim.None
+                        )
                     ),
                     cursorBrush = SolidColor(colors.operatorKeyText),
                     visualTransformation = remember(numberingSystem) {
@@ -134,10 +140,17 @@ fun DisplaySection(
                             if (expression.isEmpty()) {
                                 Text(
                                     text = "0",
-                                    fontSize = exprFontSize,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textSecondary.copy(alpha = 0.5f),
-                                    textAlign = TextAlign.End,
+                                    style = TextStyle(
+                                        fontSize = exprFontSize,
+                                        lineHeight = exprFontSize * 1.15f,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colors.textSecondary.copy(alpha = 0.5f),
+                                        textAlign = TextAlign.End,
+                                        lineHeightStyle = LineHeightStyle(
+                                            alignment = LineHeightStyle.Alignment.Center,
+                                            trim = LineHeightStyle.Trim.None
+                                        )
+                                    ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
