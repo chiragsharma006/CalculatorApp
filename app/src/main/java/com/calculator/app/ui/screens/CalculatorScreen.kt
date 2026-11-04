@@ -334,7 +334,7 @@ fun CalculatorScreen(
                                             fontSize = 15.sp
                                         )
                                         Text(
-                                            text = "Version 1.3.0 & tools suite",
+                                            text = "Version 1.4.0 & tools suite",
                                             color = colors.textSecondary,
                                             fontSize = 12.sp
                                         )

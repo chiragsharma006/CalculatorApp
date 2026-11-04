@@ -55,7 +55,7 @@ fun AppInfoDialog(
                         color = colors.textPrimary
                     )
                     Text(
-                        text = "Version 1.3.0 • All-in-One Suite",
+                        text = "Version 1.4.0 • All-in-One Suite",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = colors.operatorKeyText
@@ -91,6 +91,7 @@ fun AppInfoDialog(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     FeatureBullet(text = "Standard & Scientific modes with DEG / RAD angle toggle")
+                    FeatureBullet(text = "Smart parenthesis validation & automatic bracket balancing on evaluation")
                     FeatureBullet(text = "High-visibility typography: boosted font sizes for numpad digits & scientific functions")
                     FeatureBullet(text = "Inverse functions (sin⁻¹, cos⁻¹, tan⁻¹), powers (xʸ) & factorials (n!)")
                     FeatureBullet(text = "Smart percentages (+10%, −15%, standalone %) & mathematical constants (π, e)")
@@ -130,6 +131,7 @@ fun AppInfoDialog(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     FeatureBullet(text = "11 Unit Converters with live forex exchange rates (Currency, Length, Weight, Temp, Speed, Storage, etc.)")
+                    FeatureBullet(text = "Non-colliding arc swap animation with 180° animated toggles & fluid card shuffle")
                     FeatureBullet(text = "Smart input replacement: entering digits seamlessly replaces default presets")
                     FeatureBullet(text = "Financial Calculators: Loan EMI, Investment (SIP), GST, Discount")
                     FeatureBullet(text = "Date & Time differences, duration add/subtract & Age calculator")
