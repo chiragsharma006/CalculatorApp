@@ -68,11 +68,11 @@ class CalculatorViewModel(
             is CalculatorAction.ConstantE -> appendConstant("e")
             is CalculatorAction.Backspace -> handleBackspace()
             is CalculatorAction.MoveCursor -> {
-                val maxLen = _state.value.expression.length
-                val clamped = action.newIndex.coerceIn(0, maxLen)
+                val current = _state.value.expression
+                val sanitized = sanitizeCursorIndex(current, action.newIndex)
                 _state.update {
                     it.copy(
-                        cursorIndex = clamped,
+                        cursorIndex = sanitized,
                         isResultCalculated = false
                     )
                 }
@@ -165,11 +165,25 @@ class CalculatorViewModel(
         }
 
         val current = _state.value.expression
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
         val before = current.substring(0, cursor)
         val after = current.substring(cursor)
-        val updated = before + textToInsert + after
-        val newCursor = cursor + textToInsert.length
+
+        val updated: String
+        val newCursor: Int
+
+        if (before.endsWith(" ") && after.trimStart().isNotEmpty() && isOperatorChar(after.trimStart().first())) {
+            val trimmedBefore = before.trimEnd()
+            updated = "$trimmedBefore$textToInsert $after"
+            newCursor = trimmedBefore.length + textToInsert.length
+        } else if (after.startsWith(" ") && before.trimEnd().isNotEmpty() && isOperatorChar(before.trimEnd().last())) {
+            val trimmedAfter = after.trimStart()
+            updated = "$before $textToInsert$trimmedAfter"
+            newCursor = before.length + 1 + textToInsert.length
+        } else {
+            updated = before + textToInsert + after
+            newCursor = cursor + textToInsert.length
+        }
 
         _state.update {
             it.copy(
@@ -199,7 +213,7 @@ class CalculatorViewModel(
         }
 
         val current = _state.value.expression
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
 
         // If expression is "0" and cursor is at end, replace "0" with digit
         if (current == "0" && cursor == 1) {
@@ -217,8 +231,34 @@ class CalculatorViewModel(
 
         val before = current.substring(0, cursor)
         val after = current.substring(cursor)
-        val updated = before + digit + after
-        val newCursor = cursor + digit.length
+
+        val updated: String
+        val newCursor: Int
+
+        // Protect against any operator whitespace edge-cases:
+        // Case A: User inserts digit before an operator preceded by space (e.g. "5 " and "× ")
+        if (before.endsWith(" ") && after.trimStart().isNotEmpty() && isOperatorChar(after.trimStart().first())) {
+            val trimmedBefore = before.trimEnd()
+            updated = "$trimmedBefore$digit $after"
+            newCursor = trimmedBefore.length + digit.length
+        }
+        // Case B: User inserts digit after an operator before trailing space (e.g. "5 ×" and " ")
+        else if (after.startsWith(" ") && before.trimEnd().isNotEmpty() && isOperatorChar(before.trimEnd().last())) {
+            val trimmedAfter = after.trimStart()
+            updated = "$before $digit$trimmedAfter"
+            newCursor = before.length + 1 + digit.length
+        }
+        // Case C: User inserts digit between digit and space or space and digit (e.g. "5 " and "9") -> collapse stray whitespace between digits
+        else if (before.endsWith(" ") && after.isNotEmpty() && after.first().isDigit()) {
+            val trimmedBefore = before.trimEnd()
+            updated = "$trimmedBefore$digit$after"
+            newCursor = trimmedBefore.length + digit.length
+        }
+        else {
+            updated = before + digit + after
+            newCursor = cursor + digit.length
+        }
+
         _state.update {
             it.copy(
                 expression = updated,
@@ -259,9 +299,31 @@ class CalculatorViewModel(
             return
         }
 
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
         val before = current.substring(0, cursor)
         val after = current.substring(cursor)
+
+        // If before ends with space and after starts with operator:
+        // Decimal belongs to the left operand
+        if (before.endsWith(" ") && after.trimStart().isNotEmpty() && isOperatorChar(after.trimStart().first())) {
+            val trimmedBefore = before.trimEnd()
+            val numBefore = trimmedBefore.takeLastWhile { it.isDigit() || it == '.' }
+            if (!numBefore.contains('.')) {
+                val insertion = if (trimmedBefore.isNotEmpty() && trimmedBefore.last().isDigit()) "." else "0."
+                val updated = "$trimmedBefore$insertion $after"
+                val newCursor = trimmedBefore.length + insertion.length
+                _state.update {
+                    it.copy(
+                        expression = updated,
+                        cursorIndex = newCursor,
+                        errorMessage = null,
+                        isResultCalculated = false
+                    )
+                }
+                updatePreview(updated)
+            }
+            return
+        }
 
         // Check if last number segment already contains a dot
         val numBefore = before.takeLastWhile { it.isDigit() || it == '.' }
@@ -410,7 +472,7 @@ class CalculatorViewModel(
     private fun appendFactorial() {
         val current = _state.value.expression
         if (current.isEmpty()) return
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
         if (cursor == 0) return
         val prevChar = current[cursor - 1]
         if (prevChar.isDigit() || prevChar == ')' || prevChar == 'π' || prevChar == 'e') {
@@ -435,7 +497,7 @@ class CalculatorViewModel(
         }
         val current = _state.value.expression
         if (current.isEmpty()) return
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
         if (cursor == 0) return
         val prevChar = current[cursor - 1]
         if (prevChar.isDigit() || prevChar == ')' || prevChar == '!') {
@@ -455,7 +517,7 @@ class CalculatorViewModel(
         val current = _state.value.expression
         if (current.isEmpty()) return
 
-        val cursor = _state.value.cursorIndex.coerceIn(0, current.length)
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
         if (cursor == 0) return
 
         val before = current.substring(0, cursor)
@@ -697,6 +759,60 @@ class CalculatorViewModel(
                 return CalculatorViewModel(repository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
+        }
+    }
+
+    companion object {
+        /**
+         * Determines whether a character is an operator symbol.
+         */
+        fun isOperatorChar(c: Char): Boolean =
+            c == '+' || c == '−' || c == '-' || c == '×' || c == '*' || c == '÷' || c == '/' || c == '^' || c == '%'
+
+        /**
+         * Ensures that the cursor cannot be positioned inside the visual padding spaces
+         * surrounding operators (e.g. in "5 × ", cursor cannot sit between ' ' and '×' or between '×' and ' ').
+         * If placed within the leading gap before an operator, it snaps cleanly before the spaces (after the left operand).
+         * If placed within the trailing gap after an operator, it snaps cleanly after the spaces (before the right operand or end of text).
+         */
+        fun sanitizeCursorIndex(expression: String, index: Int): Int {
+            if (expression.isEmpty()) return 0
+            val clamped = index.coerceIn(0, expression.length)
+            if (clamped <= 0 || clamped >= expression.length) return clamped
+
+            // Check if cursor is right before an operator preceded by whitespace (e.g. at '×' in "5 |× ")
+            if (isOperatorChar(expression[clamped])) {
+                if (expression[clamped - 1] == ' ') {
+                    var target = clamped - 1
+                    while (target > 0 && expression[target - 1] == ' ') {
+                        target--
+                    }
+                    return target
+                }
+            }
+
+            // Check if cursor is on whitespace (e.g. "5 | × " or "5 × | ")
+            if (expression[clamped] == ' ') {
+                // Check if this whitespace leads into an operator
+                var f = clamped
+                while (f < expression.length && expression[f] == ' ') f++
+                if (f < expression.length && isOperatorChar(expression[f])) {
+                    var b = clamped
+                    while (b > 0 && expression[b - 1] == ' ') b--
+                    return b
+                }
+
+                // Check if this whitespace trails an operator
+                var b = clamped
+                while (b > 0 && expression[b - 1] == ' ') b--
+                if (b > 0 && isOperatorChar(expression[b - 1])) {
+                    var target = clamped
+                    while (target < expression.length && expression[target] == ' ') target++
+                    return target
+                }
+            }
+
+            return clamped
         }
     }
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.calculator.app.data.preferences.NumberingSystem
 import com.calculator.app.domain.format.NumberFormatter
+import com.calculator.app.ui.CalculatorViewModel
 import com.calculator.app.ui.theme.LocalCalculatorColors
 
 @Composable
@@ -112,7 +113,14 @@ fun DisplaySection(
                                 onPaste?.invoke(newValue.text)
                             }
                         } else if (newValue.selection.start != cursorIndex) {
-                            onCursorChange(newValue.selection.start)
+                            val sanitized = CalculatorViewModel.sanitizeCursorIndex(expression, newValue.selection.start)
+                            if (newValue.selection.collapsed) {
+                                textFieldValue = newValue.copy(selection = TextRange(sanitized))
+                            } else {
+                                textFieldValue = newValue
+                            }
+                            onCursorChange(sanitized)
+                            return@BasicTextField
                         }
                         textFieldValue = newValue
                     },

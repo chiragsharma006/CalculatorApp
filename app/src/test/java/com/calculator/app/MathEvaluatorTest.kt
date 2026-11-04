@@ -240,6 +240,16 @@ class MathEvaluatorTest {
         assertEvaluationError("-")
         assertEvaluationError("*")
         assertEvaluationError("/")
+        // Two numbers separated only by whitespace without an operator are invalid syntax
+        assertEvaluationError("5 9")
+        assertEvaluationError("5 9×")
+        assertEvaluationError("5 9 × 2")
+    }
+
+    @Test
+    fun testValidEquationsWithOperatorSpacing() {
+        assertEvaluatesTo("59 × 2", 118.0)
+        assertEvaluatesTo("5 × 9", 45.0)
     }
 
     @Test

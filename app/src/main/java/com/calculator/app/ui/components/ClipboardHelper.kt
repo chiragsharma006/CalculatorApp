@@ -87,6 +87,9 @@ object ClipboardHelper {
         // Remove thousands commas between digits (e.g. "1,234,567.89" -> "1234567.89")
         s = s.replace(Regex("(?<=\\d),(?=\\d)"), "")
 
+        // Collapse stray whitespace between adjacent digits (e.g. "5 9" -> "59")
+        s = s.replace(Regex("(?<=\\d)\\s+(?=\\d)"), "")
+
         // Retain only valid characters for expression building
         val allowedChars = "0123456789+-×÷%^!().πe√sincotanloglndegra "
         val filtered = buildString {

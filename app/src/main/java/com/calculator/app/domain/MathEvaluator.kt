@@ -308,6 +308,12 @@ class MathEvaluator {
                     i++
                 }
                 c.isDigit() || c == '.' -> {
+                    if (tokens.isNotEmpty()) {
+                        val last = tokens.last()
+                        if (last.type == TokenType.NUMBER) {
+                            throw IllegalArgumentException("Invalid syntax: missing operator between numbers")
+                        }
+                    }
                     if (shouldInsertImplicitMultiply(tokens)) {
                         tokens.add(Token(TokenType.MULTIPLY, "*"))
                     }

@@ -274,4 +274,61 @@ class CalculatorViewModelTest {
         assertEquals("", viewModel.state.value.expression)
         assertEquals(0, viewModel.state.value.cursorIndex)
     }
+
+    @Test
+    fun testSanitizeCursorPositionPreventsLandingInOperatorGap() {
+        val expr = "5 × "
+        // Index 2 is between space and × -> snaps to 1 (after 5)
+        assertEquals(1, CalculatorViewModel.sanitizeCursorIndex(expr, 2))
+        // Index 3 is between × and trailing space -> snaps to 4 (after space)
+        assertEquals(4, CalculatorViewModel.sanitizeCursorIndex(expr, 3))
+
+        val exprWithOperand = "5 × 3"
+        // Index 2 snaps to 1
+        assertEquals(1, CalculatorViewModel.sanitizeCursorIndex(exprWithOperand, 2))
+        // Index 3 snaps to 4 (before 3)
+        assertEquals(4, CalculatorViewModel.sanitizeCursorIndex(exprWithOperand, 3))
+    }
+
+    @Test
+    fun testCursorDraggedBeforeOperatorDoesNotCreateBrokenEquation() {
+        // User inputs 5, then ×
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("×"))
+        assertEquals("5 × ", viewModel.state.value.expression)
+
+        // User drags cursor before operator (e.g. at index 2 or 1)
+        viewModel.onAction(CalculatorAction.MoveCursor(2))
+        // Verify cursor snapped out of the gap to right after '5'
+        assertEquals(1, viewModel.state.value.cursorIndex)
+
+        // User types 9: it MUST attach to the left operand (producing "59 × ", NEVER "5 9× ")
+        viewModel.onAction(CalculatorAction.Number("9"))
+        assertEquals("59 × ", viewModel.state.value.expression)
+        assertEquals(2, viewModel.state.value.cursorIndex)
+
+        // Move to the end and enter 2
+        viewModel.onAction(CalculatorAction.MoveCursor(viewModel.state.value.expression.length))
+        viewModel.onAction(CalculatorAction.Number("2"))
+        assertEquals("59 × 2", viewModel.state.value.expression)
+
+        // Calculate
+        viewModel.onAction(CalculatorAction.Calculate)
+        assertEquals("118", viewModel.state.value.finalResult)
+    }
+
+    @Test
+    fun testCursorDraggedAfterOperatorInputsNextOperand() {
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("×"))
+        // Position after operator
+        viewModel.onAction(CalculatorAction.MoveCursor(3))
+        assertEquals(4, viewModel.state.value.cursorIndex)
+
+        viewModel.onAction(CalculatorAction.Number("9"))
+        assertEquals("5 × 9", viewModel.state.value.expression)
+
+        viewModel.onAction(CalculatorAction.Calculate)
+        assertEquals("45", viewModel.state.value.finalResult)
+    }
 }
