@@ -62,8 +62,8 @@ class CalculatorViewModel(
             is CalculatorAction.CubeRoot -> appendCubeRoot()
             is CalculatorAction.Factorial -> appendFactorial()
             is CalculatorAction.Percentage -> appendPercentage()
-            is CalculatorAction.ParenthesisOpen -> appendSymbol("(")
-            is CalculatorAction.ParenthesisClose -> appendSymbol(")")
+            is CalculatorAction.ParenthesisOpen -> appendParenthesisOpen()
+            is CalculatorAction.ParenthesisClose -> appendParenthesisClose()
             is CalculatorAction.ConstantPi -> appendConstant("π")
             is CalculatorAction.ConstantE -> appendConstant("e")
             is CalculatorAction.Backspace -> handleBackspace()
@@ -513,6 +513,41 @@ class CalculatorViewModel(
         insertAtCursor(symbol)
     }
 
+    private fun appendParenthesisOpen() {
+        if (_state.value.isResultCalculated) {
+            handleClearAll()
+        }
+        insertAtCursor("(")
+    }
+
+    private fun appendParenthesisClose() {
+        if (_state.value.isResultCalculated) return
+
+        val current = _state.value.expression
+        if (current.isEmpty()) return
+
+        val cursor = sanitizeCursorIndex(current, _state.value.cursorIndex)
+        if (cursor == 0) return
+
+        val before = current.substring(0, cursor)
+
+        // Close bracket can only be given as input if total open brackets exceed total close brackets
+        val totalOpen = current.count { it == '(' }
+        val totalClose = current.count { it == ')' }
+        if (totalOpen <= totalClose) return
+
+        // And before the cursor there must be an unclosed open bracket
+        val openBefore = before.count { it == '(' }
+        val closeBefore = before.count { it == ')' }
+        if (openBefore <= closeBefore) return
+
+        // Must follow a valid operand (not '(', not an operator, and not '.')
+        val lastChar = before.trimEnd().lastOrNull() ?: return
+        if (lastChar == '(' || isOperatorChar(lastChar) || lastChar == '.') return
+
+        insertAtCursor(")")
+    }
+
     private fun handleBackspace() {
         val current = _state.value.expression
         if (current.isEmpty()) return
@@ -675,21 +710,25 @@ class CalculatorViewModel(
         val current = _state.value.expression.trim()
         if (current.isEmpty()) return
 
-        when (val res = evaluator.evaluate(current, isDegreeMode = _state.value.isDegreeMode)) {
+        // Auto-balance open and close brackets so they are equal and produce no expression error
+        val balancedExpression = autoBalanceParentheses(current)
+
+        when (val res = evaluator.evaluate(balancedExpression, isDegreeMode = _state.value.isDegreeMode)) {
             is EvalResult.Success -> {
                 val formattedResult = res.formatted
                 _state.update {
                     it.copy(
+                        expression = balancedExpression,
                         finalResult = formattedResult,
                         previewResult = "",
                         errorMessage = null,
                         isResultCalculated = true,
-                        cursorIndex = current.length
+                        cursorIndex = balancedExpression.length
                     )
                 }
                 // Save to history database
                 scope.launch {
-                    repository.saveCalculation(current, formattedResult)
+                    repository.saveCalculation(balancedExpression, formattedResult)
                 }
             }
             is EvalResult.Error -> {
@@ -711,7 +750,9 @@ class CalculatorViewModel(
             return
         }
 
-        when (val res = evaluator.evaluate(clean, isDegreeMode = _state.value.isDegreeMode)) {
+        val balanced = autoBalanceParentheses(clean)
+
+        when (val res = evaluator.evaluate(balanced, isDegreeMode = _state.value.isDegreeMode)) {
             is EvalResult.Success -> {
                 _state.update { it.copy(previewResult = res.formatted) }
             }
@@ -763,6 +804,20 @@ class CalculatorViewModel(
     }
 
     companion object {
+        /**
+         * Ensures that unclosed open parentheses are automatically closed by appending
+         * the required number of ')' to make open and close bracket counts equal.
+         */
+        fun autoBalanceParentheses(expression: String): String {
+            val openCount = expression.count { it == '(' }
+            val closeCount = expression.count { it == ')' }
+            return if (openCount > closeCount) {
+                expression + ")".repeat(openCount - closeCount)
+            } else {
+                expression
+            }
+        }
+
         /**
          * Determines whether a character is an operator symbol.
          */

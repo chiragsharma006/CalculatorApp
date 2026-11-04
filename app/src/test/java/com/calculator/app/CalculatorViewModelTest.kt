@@ -331,4 +331,100 @@ class CalculatorViewModelTest {
         viewModel.onAction(CalculatorAction.Calculate)
         assertEquals("45", viewModel.state.value.finalResult)
     }
+
+    @Test
+    fun testCloseBracketRejectedWhenEmptyOrNoMatchingOpenBracket() {
+        // When expression is empty, closing bracket is ignored
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("", viewModel.state.value.expression)
+
+        // When expression has no open bracket, closing bracket is ignored
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("+"))
+        viewModel.onAction(CalculatorAction.Number("3"))
+        assertEquals("5 + 3", viewModel.state.value.expression)
+
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("5 + 3", viewModel.state.value.expression)
+    }
+
+    @Test
+    fun testCloseBracketAcceptedWhenMatchingOpenBracketExists() {
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("+"))
+        viewModel.onAction(CalculatorAction.Number("3"))
+        assertEquals("(5 + 3", viewModel.state.value.expression)
+
+        // Close bracket should be accepted
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("(5 + 3)", viewModel.state.value.expression)
+
+        // Extra close bracket when all open brackets are closed should be rejected
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("(5 + 3)", viewModel.state.value.expression)
+    }
+
+    @Test
+    fun testCloseBracketRejectedImmediatelyAfterOpenBracketOrOperator() {
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        assertEquals("(", viewModel.state.value.expression)
+
+        // Cannot close bracket immediately after '(' (no empty '()')
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("(", viewModel.state.value.expression)
+
+        // Cannot close bracket immediately after an operator like '+'
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("+"))
+        assertEquals("(5 + ", viewModel.state.value.expression)
+
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        assertEquals("(5 + ", viewModel.state.value.expression)
+    }
+
+    @Test
+    fun testCalculateAutoBalancesUnclosedBrackets() {
+        // User types "(5 + 3" without closing parenthesis
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        viewModel.onAction(CalculatorAction.Number("5"))
+        viewModel.onAction(CalculatorAction.Operator("+"))
+        viewModel.onAction(CalculatorAction.Number("3"))
+        assertEquals("(5 + 3", viewModel.state.value.expression)
+
+        // Pressing Calculate auto-balances brackets so open and close bracket counts are equal
+        viewModel.onAction(CalculatorAction.Calculate)
+        assertEquals("(5 + 3)", viewModel.state.value.expression)
+        assertEquals("8", viewModel.state.value.finalResult)
+        assertNull(viewModel.state.value.errorMessage)
+        assertTrue(viewModel.state.value.isResultCalculated)
+
+        // Verify nested unclosed brackets: "((2 + 3) * 4" -> "((2 + 3) * 4)"
+        viewModel.onAction(CalculatorAction.ClearAll)
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        viewModel.onAction(CalculatorAction.Number("2"))
+        viewModel.onAction(CalculatorAction.Operator("+"))
+        viewModel.onAction(CalculatorAction.Number("3"))
+        viewModel.onAction(CalculatorAction.ParenthesisClose)
+        viewModel.onAction(CalculatorAction.Operator("×"))
+        viewModel.onAction(CalculatorAction.Number("4"))
+        assertEquals("((2 + 3) × 4", viewModel.state.value.expression)
+
+        viewModel.onAction(CalculatorAction.Calculate)
+        assertEquals("((2 + 3) × 4)", viewModel.state.value.expression)
+        assertEquals("20", viewModel.state.value.finalResult)
+        assertNull(viewModel.state.value.errorMessage)
+    }
+
+    @Test
+    fun testLivePreviewAutoBalancesUnclosedBrackets() {
+        viewModel.onAction(CalculatorAction.ParenthesisOpen)
+        viewModel.onAction(CalculatorAction.Number("9"))
+        viewModel.onAction(CalculatorAction.Operator("×"))
+        viewModel.onAction(CalculatorAction.Number("5"))
+
+        // Preview should calculate 45 even before closing bracket is pressed
+        assertEquals("45", viewModel.state.value.previewResult)
+    }
 }
