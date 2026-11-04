@@ -139,7 +139,7 @@ fun DisplaySection(
                         ) {
                             if (expression.isEmpty()) {
                                 Text(
-                                    text = "0",
+                                    text = "0\u2009",
                                     style = TextStyle(
                                         fontSize = exprFontSize,
                                         lineHeight = exprFontSize * 1.15f,

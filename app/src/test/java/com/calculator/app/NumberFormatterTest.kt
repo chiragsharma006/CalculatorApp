@@ -14,7 +14,7 @@ class NumberFormatterTest {
         assertEquals("0", NumberFormatter.formatIntegerString("0", NumberingSystem.INTERNATIONAL))
         assertEquals("999", NumberFormatter.formatIntegerString("999", NumberingSystem.INTERNATIONAL))
         assertEquals("1,000", NumberFormatter.formatIntegerString("1000", NumberingSystem.INTERNATIONAL))
-        assertEquals("10,000", NumberFormatter.formatIntegerString("10000", NumberingSystem.INTERNATIONAL))
+        assertEquals("10,00,000", NumberFormatter.formatIntegerString("1000000", NumberingSystem.INDIAN))
         assertEquals("100,000", NumberFormatter.formatIntegerString("100000", NumberingSystem.INTERNATIONAL))
         assertEquals("1,000,000", NumberFormatter.formatIntegerString("1000000", NumberingSystem.INTERNATIONAL))
         assertEquals("12,345,678", NumberFormatter.formatIntegerString("12345678", NumberingSystem.INTERNATIONAL))
@@ -94,5 +94,12 @@ class NumberFormatterTest {
 
         // Clicking on or after the trailing space also resolves to the end of the raw text
         assertEquals(3, offsetMapping.transformedToOriginal(4))
+
+        // Empty text case: ensures initial cursor position aligns with single digits
+        val emptyResult = transform.filter(AnnotatedString(""))
+        assertEquals("\u2009", emptyResult.text.text)
+        assertEquals(0, emptyResult.offsetMapping.originalToTransformed(0))
+        assertEquals(0, emptyResult.offsetMapping.transformedToOriginal(0))
+        assertEquals(0, emptyResult.offsetMapping.transformedToOriginal(1))
     }
 }

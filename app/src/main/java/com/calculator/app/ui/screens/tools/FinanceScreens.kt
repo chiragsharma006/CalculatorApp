@@ -1111,11 +1111,25 @@ private fun GstInputCard(
                             color = colors.operatorKeyText,
                             modifier = Modifier.padding(end = 8.dp)
                         )
+                        var isAmountExample by remember { mutableStateOf(true) }
                         BasicTextField(
                             value = amountStr,
                             onValueChange = { input ->
                                 if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                                    onAmountChange(input)
+                                    if (isAmountExample && input.isNotEmpty() && input != amountStr) {
+                                        isAmountExample = false
+                                        val newText = if (input.length > amountStr.length) {
+                                            if (input.startsWith(amountStr)) input.substring(amountStr.length)
+                                            else if (input.endsWith(amountStr)) input.substring(0, input.length - amountStr.length)
+                                            else input.filter { !amountStr.contains(it) }.ifEmpty { input.last().toString() }
+                                        } else {
+                                            input
+                                        }
+                                        onAmountChange(newText.ifEmpty { input })
+                                    } else {
+                                        isAmountExample = false
+                                        onAmountChange(input)
+                                    }
                                 }
                             },
                             singleLine = true,
@@ -1255,11 +1269,25 @@ private fun GstInputCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.End
                     ) {
+                        var isGstRateExample by remember { mutableStateOf(true) }
                         BasicTextField(
                             value = gstRateStr,
                             onValueChange = { input ->
                                 if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                                    onGstRateChange(input)
+                                    if (isGstRateExample && input.isNotEmpty() && input != gstRateStr) {
+                                        isGstRateExample = false
+                                        val newText = if (input.length > gstRateStr.length) {
+                                            if (input.startsWith(gstRateStr)) input.substring(gstRateStr.length)
+                                            else if (input.endsWith(gstRateStr)) input.substring(0, input.length - gstRateStr.length)
+                                            else input.filter { !gstRateStr.contains(it) }.ifEmpty { input.last().toString() }
+                                        } else {
+                                            input
+                                        }
+                                        onGstRateChange(newText.ifEmpty { input })
+                                    } else {
+                                        isGstRateExample = false
+                                        onGstRateChange(input)
+                                    }
                                 }
                             },
                             singleLine = true,
@@ -1581,6 +1609,7 @@ private fun FinanceInputField(
     val colors = LocalCalculatorColors.current
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
+    var isExampleValue by remember { mutableStateOf(true) }
     var showActionPopup by remember { mutableStateOf(false) }
     var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
 
@@ -1627,7 +1656,20 @@ private fun FinanceInputField(
                     value = value,
                     onValueChange = { input ->
                         if (input.isEmpty() || input.matches(Regex("^\\d*\\.?\\d*$"))) {
-                            onValueChange(input)
+                            if (isExampleValue && input.isNotEmpty() && input != value) {
+                                isExampleValue = false
+                                val newText = if (input.length > value.length) {
+                                    if (input.startsWith(value)) input.substring(value.length)
+                                    else if (input.endsWith(value)) input.substring(0, input.length - value.length)
+                                    else input.filter { !value.contains(it) }.ifEmpty { input.last().toString() }
+                                } else {
+                                    input
+                                }
+                                onValueChange(newText.ifEmpty { input })
+                            } else {
+                                isExampleValue = false
+                                onValueChange(input)
+                            }
                         }
                     },
                     singleLine = true,

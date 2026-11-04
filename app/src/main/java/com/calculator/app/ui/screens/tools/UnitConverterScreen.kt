@@ -130,23 +130,29 @@ fun UnitConverterScreen(
     // Swap animation trigger counter
     var swapAnimationCount by remember { mutableIntStateOf(0) }
 
-    var inputValue by remember { mutableStateOf("1") }
+    var inputValue by remember(selectedCategory) { mutableStateOf("1") }
+    var isExampleValue by remember(selectedCategory) { mutableStateOf(true) }
     var inputCursorIndex by remember(activeTarget) { mutableIntStateOf(1) }
     val numericInput = inputValue.toDoubleOrNull() ?: 0.0
 
     fun handleDigit(digit: String) {
-        if (inputValue == "0") {
+        if (isExampleValue || inputValue == "0") {
             inputValue = digit
-            inputCursorIndex = 1
+            inputCursorIndex = digit.length
+            isExampleValue = false
         } else if (inputValue.length < 15) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
             inputValue = inputValue.substring(0, clamped) + digit + inputValue.substring(clamped)
-            inputCursorIndex = clamped + 1
+            inputCursorIndex = clamped + digit.length
         }
     }
 
     fun handleDecimal() {
-        if (!inputValue.contains('.')) {
+        if (isExampleValue) {
+            inputValue = "0."
+            inputCursorIndex = 2
+            isExampleValue = false
+        } else if (!inputValue.contains('.')) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
             inputValue = inputValue.substring(0, clamped) + "." + inputValue.substring(clamped)
             inputCursorIndex = clamped + 1
@@ -154,7 +160,11 @@ fun UnitConverterScreen(
     }
 
     fun handleDoubleZero() {
-        if (inputValue != "0" && inputValue.length < 14) {
+        if (isExampleValue) {
+            inputValue = "0"
+            inputCursorIndex = 1
+            isExampleValue = false
+        } else if (inputValue != "0" && inputValue.length < 14) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
             inputValue = inputValue.substring(0, clamped) + "00" + inputValue.substring(clamped)
             inputCursorIndex = clamped + 2
@@ -162,11 +172,12 @@ fun UnitConverterScreen(
     }
 
     fun handleToggleSign() {
+        isExampleValue = false
         if (inputValue.startsWith("-")) {
             inputValue = inputValue.removePrefix("-")
             inputCursorIndex = (inputCursorIndex - 1).coerceAtLeast(0)
         } else if (inputValue != "0" && inputValue.isNotEmpty()) {
-            inputValue = "-$inputValue"
+            inputValue = "-`$inputValue"
             inputCursorIndex = inputCursorIndex + 1
         }
     }
@@ -174,6 +185,7 @@ fun UnitConverterScreen(
     fun handleClear() {
         inputValue = "0"
         inputCursorIndex = 1
+        isExampleValue = false
     }
 
     fun handleCut() {
@@ -181,6 +193,7 @@ fun UnitConverterScreen(
             ClipboardHelper.cut(context, inputValue)
             inputValue = "0"
             inputCursorIndex = 1
+            isExampleValue = false
         }
     }
 
@@ -188,18 +201,25 @@ fun UnitConverterScreen(
         val sanitized = ClipboardHelper.sanitizeDecimalPaste(rawText)
         if (sanitized.isNotEmpty()) {
             val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
-            if (inputValue == "0") {
+            if (isExampleValue || inputValue == "0") {
                 inputValue = sanitized
                 inputCursorIndex = sanitized.length
             } else {
                 inputValue = inputValue.substring(0, clamped) + sanitized + inputValue.substring(clamped)
                 inputCursorIndex = clamped + sanitized.length
             }
+            isExampleValue = false
             Toast.makeText(context, "Pasted", Toast.LENGTH_SHORT).show()
         }
     }
 
     fun handleBackspace() {
+        if (isExampleValue) {
+            inputValue = "0"
+            inputCursorIndex = 1
+            isExampleValue = false
+            return
+        }
         val clamped = inputCursorIndex.coerceIn(0, inputValue.length)
         if (clamped > 0) {
             inputValue = inputValue.removeRange(clamped - 1, clamped)
@@ -226,6 +246,16 @@ fun UnitConverterScreen(
         toDisplayValue = remember(numericInput, fromUnit, toUnit, selectedCategory) {
             val res = UnitConverterEngine.convert(numericInput, from = fromUnit, to = toUnit, category = selectedCategory)
             UnitConverterEngine.formatResult(res)
+        }
+    }
+
+    val handleSelectActive: (ActiveUnitField) -> Unit = { newTarget ->
+        if (activeTarget != newTarget) {
+            val currentDisplay = if (newTarget == ActiveUnitField.TO) toDisplayValue else fromDisplayValue
+            inputValue = currentDisplay
+            inputCursorIndex = currentDisplay.length
+            activeTarget = newTarget
+            isExampleValue = true
         }
     }
 
@@ -286,7 +316,7 @@ fun UnitConverterScreen(
                         toUnit = toUnit,
                         onSelectTo = { toUnit = it },
                         activeTarget = activeTarget,
-                        onSelectActive = { activeTarget = it },
+                        onSelectActive = handleSelectActive,
                         fromDisplayValue = fromDisplayValue,
                         toDisplayValue = toDisplayValue,
                         context = context,
@@ -368,7 +398,7 @@ fun UnitConverterScreen(
                         toUnit = toUnit,
                         onSelectTo = { toUnit = it },
                         activeTarget = activeTarget,
-                        onSelectActive = { activeTarget = it },
+                        onSelectActive = handleSelectActive,
                         fromDisplayValue = fromDisplayValue,
                         toDisplayValue = toDisplayValue,
                         context = context,

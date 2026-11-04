@@ -785,12 +785,28 @@ private fun NumericUnitInputField(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalCalculatorColors.current
+    var isExampleValue by remember { mutableStateOf(true) }
 
     OutlinedTextField(
         value = value,
         onValueChange = { str ->
             val filtered = str.filter { it.isDigit() }
-            if (filtered.length <= 5) onValueChange(filtered)
+            if (filtered.length <= 5) {
+                if (isExampleValue && filtered.isNotEmpty() && filtered != value) {
+                    isExampleValue = false
+                    val newText = if (filtered.length > value.length) {
+                        if (filtered.startsWith(value)) filtered.substring(value.length)
+                        else if (filtered.endsWith(value)) filtered.substring(0, filtered.length - value.length)
+                        else filtered.filter { !value.contains(it) }.ifEmpty { filtered.last().toString() }
+                    } else {
+                        filtered
+                    }
+                    onValueChange(newText.ifEmpty { filtered })
+                } else {
+                    isExampleValue = false
+                    onValueChange(filtered)
+                }
+            }
         },
         label = { Text(label, fontSize = 11.sp, maxLines = 1) },
         textStyle = androidx.compose.ui.text.TextStyle(

@@ -17,11 +17,17 @@ class ExpressionVisualTransformation(
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         if (text.text.isEmpty()) {
-            return TransformedText(text, OffsetMapping.Identity)
+            val emptyOffsetMapping = object : OffsetMapping {
+                override fun originalToTransformed(offset: Int): Int = 0
+                override fun transformedToOriginal(offset: Int): Int = 0
+            }
+            // Keep the same trailing thin space (\u2009) in empty state so the initial
+            // cursor sits at the exact same position as after entering digits, preventing cursor jumps.
+            return TransformedText(AnnotatedString("\u2009"), emptyOffsetMapping)
         }
         val result = NumberFormatter.formatExpression(text.text, system)
         // Append a thin space (\u2009) so that when the cursor is at the very end of the expression,
-        // it is treated as an internal position (identical to when positioned between characters, as in Image 1),
+        // it is treated as an internal position (identical to when positioned between characters),
         // preventing Android Compose's text layout from clamping or misaligning the cursor bar with the drop handle.
         val transformed = result.formattedText + "\u2009"
         val offsetMapping = object : OffsetMapping {
