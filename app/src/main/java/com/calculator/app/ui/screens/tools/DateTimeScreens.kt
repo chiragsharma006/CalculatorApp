@@ -3,6 +3,9 @@ package com.calculator.app.ui.screens.tools
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.res.Configuration
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -333,6 +337,16 @@ private fun DatePickersCard(
     val colors = LocalCalculatorColors.current
     val context = LocalContext.current
 
+    var swapRotationCount by remember { mutableIntStateOf(0) }
+    val swapRotation by animateFloatAsState(
+        targetValue = swapRotationCount * 180f,
+        animationSpec = spring(
+            dampingRatio = 0.65f,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "dateSwapRotation"
+    )
+
     val startPickerDialog = remember(startDate) {
         DatePickerDialog(
             context,
@@ -407,7 +421,10 @@ private fun DatePickersCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 IconButton(
-                    onClick = onSwap,
+                    onClick = {
+                        swapRotationCount++
+                        onSwap()
+                    },
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
@@ -416,7 +433,8 @@ private fun DatePickersCard(
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Swap Dates",
-                        tint = colors.textSecondary
+                        tint = colors.textSecondary,
+                        modifier = Modifier.graphicsLayer { rotationZ = swapRotation }
                     )
                 }
             }
@@ -1195,6 +1213,16 @@ private fun TimePickersCard(
     val colors = LocalCalculatorColors.current
     val context = LocalContext.current
 
+    var swapRotationCount by remember { mutableIntStateOf(0) }
+    val swapRotation by animateFloatAsState(
+        targetValue = swapRotationCount * 180f,
+        animationSpec = spring(
+            dampingRatio = 0.65f,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "timeSwapRotation"
+    )
+
     val startPickerDialog = remember(startTime) {
         TimePickerDialog(
             context,
@@ -1269,7 +1297,10 @@ private fun TimePickersCard(
                 horizontalArrangement = Arrangement.Center
             ) {
                 IconButton(
-                    onClick = onSwap,
+                    onClick = {
+                        swapRotationCount++
+                        onSwap()
+                    },
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
@@ -1278,7 +1309,8 @@ private fun TimePickersCard(
                     Icon(
                         imageVector = Icons.Default.SwapVert,
                         contentDescription = "Swap Times",
-                        tint = colors.textSecondary
+                        tint = colors.textSecondary,
+                        modifier = Modifier.graphicsLayer { rotationZ = swapRotation }
                     )
                 }
             }

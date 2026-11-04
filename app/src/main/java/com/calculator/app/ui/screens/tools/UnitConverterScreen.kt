@@ -58,6 +58,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -539,8 +541,28 @@ private fun MergedConversionCard(
         }
     }
 
-    val animAlpha = 1f - (swapAnim.value * 0.25f)
-    val animScale = 1f - (swapAnim.value * 0.02f)
+    var rowHeightPx by remember { mutableFloatStateOf(0f) }
+    val defaultDistancePx = with(density) { 60.dp.toPx() }
+    val travelDistancePx = if (rowHeightPx > 0f) {
+        rowHeightPx + with(density) { 9.dp.toPx() }
+    } else {
+        defaultDistancePx
+    }
+
+    val progress = swapAnim.value.coerceIn(0f, 1f)
+    // Sinusoidal arc gives smooth horizontal clearance peaking at the midpoint
+    val arcProgress = kotlin.math.sin(progress * Math.PI.toFloat())
+    val arcOffsetPx = arcProgress * with(density) { 14.dp.toPx() }
+
+    val fromTranslationY = progress * travelDistancePx
+    val toTranslationY = -progress * travelDistancePx
+
+    val fromTranslationX = arcOffsetPx
+    val toTranslationX = -arcOffsetPx
+
+    val fromScale = 1f + (arcProgress * 0.02f)
+    val toScale = 1f - (arcProgress * 0.02f)
+    val animAlpha = 1f - (arcProgress * 0.12f)
 
     Surface(
         color = colors.surface,
@@ -551,11 +573,21 @@ private fun MergedConversionCard(
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
             // FROM ROW with Swap Motion
             Box(
-                modifier = Modifier.graphicsLayer {
-                    alpha = animAlpha
-                    scaleX = animScale
-                    scaleY = animScale
-                }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onSizeChanged { size ->
+                        if (size.height > 0) {
+                            rowHeightPx = size.height.toFloat()
+                        }
+                    }
+                    .zIndex(if (progress > 0.01f) 1f else 0f)
+                    .graphicsLayer {
+                        translationY = fromTranslationY
+                        translationX = fromTranslationX
+                        scaleX = fromScale
+                        scaleY = fromScale
+                        alpha = animAlpha
+                    }
             ) {
                 ConversionUnitRow(
                     label = "From",
@@ -585,11 +617,16 @@ private fun MergedConversionCard(
 
             // TO ROW with Swap Motion
             Box(
-                modifier = Modifier.graphicsLayer {
-                    alpha = animAlpha
-                    scaleX = animScale
-                    scaleY = animScale
-                }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex(0f)
+                    .graphicsLayer {
+                        translationY = toTranslationY
+                        translationX = toTranslationX
+                        scaleX = toScale
+                        scaleY = toScale
+                        alpha = animAlpha
+                    }
             ) {
                 ConversionUnitRow(
                     label = "To",
