@@ -1,27 +1,37 @@
 package com.calculator.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,8 +58,16 @@ fun DisplaySection(
 ) {
     val context = LocalContext.current
     val colors = LocalCalculatorColors.current
+    val density = LocalDensity.current
     val haptic = LocalHapticFeedback.current
-    val focusRequester = remember { FocusRequester() }
+    val viewConfig = LocalViewConfiguration.current
+
+    val scrollState = rememberScrollState()
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var isDraggingCursor by remember { mutableStateOf(false) }
+    var showActionPopup by remember { mutableStateOf(false) }
+    var actionPopupOffset by remember { mutableStateOf(Offset.Zero) }
+    var magnifierAnchorOffset by remember { mutableStateOf(Offset.Zero) }
 
     val horizontalPadding = if (isLandscape) 14.dp else 18.dp
     val verticalPadding = if (isLandscape) 8.dp else 16.dp
@@ -65,6 +83,16 @@ fun DisplaySection(
     val previewFontSize = if (isLandscape) 22.sp else 28.sp
     val resultBoxHeight = if (isLandscape) 42.dp else 56.dp
 
+    // Format expression and map cursor
+    val formattedExpression = remember(expression, numberingSystem) {
+        NumberFormatter.formatExpression(expression, numberingSystem)
+    }
+    val displayText = if (formattedExpression.formattedText.isEmpty()) "0" else formattedExpression.formattedText
+    val isPlaceholder = formattedExpression.formattedText.isEmpty()
+    val formattedCursorIndex = remember(expression, cursorIndex, numberingSystem) {
+        NumberFormatter.rawToFormattedIndex(cursorIndex, formattedExpression)
+    }
+
     val formattedFinalResult = remember(finalResult, numberingSystem) {
         NumberFormatter.formatNumber(finalResult, numberingSystem)
     }
@@ -72,22 +100,79 @@ fun DisplaySection(
         NumberFormatter.formatNumber(previewResult, numberingSystem)
     }
 
-    var textFieldValue by remember(expression, cursorIndex) {
-        val clamped = cursorIndex.coerceIn(0, expression.length)
-        mutableStateOf(
-            TextFieldValue(
-                text = expression,
-                selection = TextRange(clamped)
-            )
-        )
+    // Blinking animation for the editing cursor
+    val infiniteTransition = rememberInfiniteTransition(label = "cursorTransition")
+    val cursorAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 530, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cursorBlink"
+    )
+
+    val currentExpression by rememberUpdatedState(expression)
+    val currentCursorIndex by rememberUpdatedState(cursorIndex)
+    val currentOnCursorChange by rememberUpdatedState(onCursorChange)
+    val currentFormattedExpression by rememberUpdatedState(formattedExpression)
+    val currentFormattedCursorIndex by rememberUpdatedState(formattedCursorIndex)
+    val currentDisplayText by rememberUpdatedState(displayText)
+    val currentTextLayoutResult by rememberUpdatedState(textLayoutResult)
+    val currentHaptic by rememberUpdatedState(haptic)
+    val currentIsPlaceholder by rememberUpdatedState(isPlaceholder)
+
+    val showCursor = !isResultCalculated
+
+    // Insets to ensure the cursor dot handle is NEVER clipped in any direction
+    val startInset = 20.dp
+    val endInset = 20.dp
+    val topInset = 6.dp
+    val bottomInset = 26.dp
+    val startInsetPx = with(density) { startInset.toPx() }
+    val endInsetPx = with(density) { endInset.toPx() }
+    val topInsetPx = with(density) { topInset.toPx() }
+
+    fun updateCursorFromOffset(offset: Offset) {
+        if (currentIsPlaceholder || currentExpression.isEmpty()) {
+            currentOnCursorChange(0)
+            return
+        }
+        val layout = currentTextLayoutResult ?: return
+        val centerY = (layout.size.height / 2f).coerceAtLeast(1f)
+        val localX = offset.x - startInsetPx
+        val charIndex = layout.getOffsetForPosition(Offset(localX, centerY))
+        val rawIndex = NumberFormatter.formattedToRawIndex(charIndex, currentFormattedExpression)
+            .coerceIn(0, currentExpression.length)
+        if (rawIndex != currentCursorIndex) {
+            currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            currentOnCursorChange(rawIndex)
+        }
     }
 
-    // Auto-focus the expression field when editing
-    LaunchedEffect(isResultCalculated) {
-        if (!isResultCalculated) {
-            try {
-                focusRequester.requestFocus()
-            } catch (_: Throwable) {}
+    // Auto-scroll when cursor position moves beyond viewport
+    LaunchedEffect(expression, cursorIndex, numberingSystem) {
+        val layout = textLayoutResult ?: return@LaunchedEffect
+        if (displayText.isEmpty()) return@LaunchedEffect
+        val clamped = if (isPlaceholder) 0 else formattedCursorIndex.coerceIn(0, displayText.length)
+        val rect = layout.getCursorRectSafe(clamped) ?: return@LaunchedEffect
+
+        if (scrollState.maxValue > 0) {
+            val cursorXInRow = rect.left + startInsetPx
+            val viewport = scrollState.viewportSize
+            val currentScroll = scrollState.value
+            val leftMargin = 50
+            val rightMargin = 50
+
+            if (cursorXInRow < currentScroll + leftMargin) {
+                scrollState.animateScrollTo((cursorXInRow - leftMargin).toInt().coerceAtLeast(0))
+            } else if (cursorXInRow > currentScroll + viewport - rightMargin) {
+                scrollState.animateScrollTo((cursorXInRow - viewport + rightMargin).toInt().coerceAtMost(scrollState.maxValue))
+            }
+        } else {
+            if (scrollState.value != 0) {
+                scrollState.scrollTo(0)
+            }
         }
     }
 
@@ -98,55 +183,208 @@ fun DisplaySection(
         horizontalAlignment = Alignment.End,
         verticalArrangement = if (isLandscape) Arrangement.Center else Arrangement.Bottom
     ) {
-        // Main Expression Area: Uses the EXACT native BasicTextField from the Finance tool
+        // Main Expression Display Area
         if (!isResultCalculated) {
-            NoSoftKeyboard {
-                BasicTextField(
-                    value = textFieldValue,
-                    onValueChange = { newValue ->
-                        if (newValue.text != expression) {
-                            if (newValue.text.isEmpty()) {
-                                onCut?.invoke()
-                            } else {
-                                onPaste?.invoke(newValue.text)
-                            }
-                        } else if (newValue.selection.start != cursorIndex) {
-                            onCursorChange(newValue.selection.start)
-                        }
-                        textFieldValue = newValue
-                    },
-                    singleLine = true,
-                    textStyle = TextStyle(
-                        fontSize = exprFontSize,
-                        fontWeight = FontWeight.Medium,
-                        color = colors.textPrimary,
-                        textAlign = TextAlign.End
-                    ),
-                    cursorBrush = SolidColor(colors.operatorKeyText),
-                    visualTransformation = remember(numberingSystem) {
-                        ExpressionVisualTransformation(numberingSystem)
-                    },
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
-                        ) {
-                            if (expression.isEmpty()) {
-                                Text(
-                                    text = "0",
-                                    fontSize = exprFontSize,
-                                    fontWeight = FontWeight.Medium,
-                                    color = colors.textSecondary.copy(alpha = 0.5f),
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            innerTextField()
-                        }
-                    },
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val minWidth = maxWidth
+                val clampedIndex = if (isPlaceholder) 0 else formattedCursorIndex.coerceIn(0, displayText.length)
+                val curRect = textLayoutResult.getCursorRectSafe(clampedIndex)
+                val cursorScreenX = (curRect?.left ?: 0f) + startInsetPx - scrollState.value
+                val cursorScreenY = (curRect?.top ?: 0f) + topInsetPx
+
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester)
+                        .horizontalScroll(scrollState),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .widthIn(min = minWidth)
+                            .pointerInput(showCursor, displayText) {
+                                if (!showCursor) return@pointerInput
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    val layout = currentTextLayoutResult
+                                    val clamped = if (currentIsPlaceholder) 0 else currentFormattedCursorIndex.coerceIn(0, currentDisplayText.length)
+                                    val currentRect = layout.getCursorRectSafe(clamped)
+
+                                    val handleRadius = 6.5.dp.toPx()
+                                    val cursorHeight = if (currentRect != null) {
+                                        (currentRect.bottom - currentRect.top - 2.dp.toPx()).coerceAtLeast(14f)
+                                    } else 14f
+                                    val handleCenter = if (currentRect != null) {
+                                        Offset(
+                                            currentRect.left + startInsetPx,
+                                            currentRect.top + topInsetPx + cursorHeight + handleRadius
+                                        )
+                                    } else null
+
+                                    // Generous touch target around the dot handle (28dp radius)
+                                    val hitRadius = 28.dp.toPx()
+                                    val isHandleHit = handleCenter != null && (down.position - handleCenter).getDistance() <= hitRadius
+
+                                    if (isHandleHit) {
+                                        // User touched the dot handle: Consume touch and drag cursor
+                                        down.consume()
+                                        var hasDragged = false
+                                        val pointerId = down.id
+                                        magnifierAnchorOffset = Offset(
+                                            (currentRect?.left ?: 0f) + startInsetPx - scrollState.value,
+                                            cursorScreenY
+                                        )
+
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.find { it.id == pointerId } ?: break
+                                            if (change.pressed) {
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop) {
+                                                    if (!hasDragged) {
+                                                        hasDragged = true
+                                                        isDraggingCursor = true
+                                                        currentHaptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                    }
+                                                    change.consume()
+                                                    magnifierAnchorOffset = Offset(
+                                                        change.position.x - scrollState.value,
+                                                        cursorScreenY
+                                                    )
+                                                    updateCursorFromOffset(change.position)
+                                                }
+                                            } else {
+                                                break
+                                            }
+                                        }
+                                        isDraggingCursor = false
+
+                                        // If tapped the handle without dragging, show Cut / Copy / Paste
+                                        if (!hasDragged) {
+                                            val canCutOrCopy = !currentIsPlaceholder && currentExpression.isNotEmpty()
+                                            val hasClip = ClipboardHelper.hasClipboardText(context)
+                                            if (canCutOrCopy || hasClip) {
+                                                currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                actionPopupOffset = handleCenter ?: down.position
+                                                showActionPopup = true
+                                            }
+                                        }
+                                    } else {
+                                        // User touched outside the dot handle: Allow smooth horizontal scrolling!
+                                        val pointerId = down.id
+                                        var moved = false
+                                        var isLongPress = false
+                                        val longPressTimeout = viewConfig.longPressTimeoutMillis
+                                        val startTime = System.currentTimeMillis()
+
+                                        while (true) {
+                                            val event = awaitPointerEvent()
+                                            val change = event.changes.find { it.id == pointerId } ?: break
+                                            if (change.pressed) {
+                                                val dist = (change.position - down.position).getDistance()
+                                                if (dist > viewConfig.touchSlop || change.isConsumed) {
+                                                    moved = true
+                                                    showActionPopup = false
+                                                } else if (!moved && !isLongPress && (System.currentTimeMillis() - startTime >= longPressTimeout)) {
+                                                    isLongPress = true
+                                                    currentHaptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    updateCursorFromOffset(down.position)
+                                                    val canCutOrCopy = !currentIsPlaceholder && currentExpression.isNotEmpty()
+                                                    val hasClip = ClipboardHelper.hasClipboardText(context)
+                                                    if (canCutOrCopy || hasClip) {
+                                                        actionPopupOffset = down.position
+                                                        showActionPopup = true
+                                                    }
+                                                }
+                                            } else {
+                                                // Tap without dragging or long press: Place cursor
+                                                if (!moved && !isLongPress && !change.isConsumed) {
+                                                    updateCursorFromOffset(down.position)
+                                                    showActionPopup = false
+                                                }
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .drawWithContent {
+                                drawContent()
+                                if (showCursor) {
+                                    val currentClamped = if (isPlaceholder) 0 else formattedCursorIndex.coerceIn(0, displayText.length)
+                                    val cursorRect = textLayoutResult.getCursorRectSafe(currentClamped)
+                                    if (cursorRect != null) {
+                                        val effectiveAlpha = if (isDraggingCursor) 1f else cursorAlpha
+                                        val cursorWidth = 2.5.dp.toPx()
+                                        val verticalInset = 1.dp.toPx()
+                                        val cursorHeight = (cursorRect.bottom - cursorRect.top - verticalInset * 2).coerceAtLeast(14f)
+                                        val cursorTop = cursorRect.top + verticalInset + topInsetPx
+                                        val cursorBottom = cursorTop + cursorHeight
+                                        val cursorX = cursorRect.left + startInsetPx
+
+                                        // Vertical cursor bar (matching user's preferred style)
+                                        drawRoundRect(
+                                            color = colors.equalsKeyBg.copy(alpha = effectiveAlpha),
+                                            topLeft = Offset(cursorX - cursorWidth / 2f, cursorTop),
+                                            size = Size(cursorWidth, cursorHeight),
+                                            cornerRadius = CornerRadius(cursorWidth / 2f, cursorWidth / 2f)
+                                        )
+
+                                        // Round teardrop handle dot directly below cursor bar
+                                        val handleRadius = 6.5.dp.toPx()
+                                        val handleCenter = Offset(cursorX, cursorBottom + handleRadius)
+
+                                        // Ripple / touch halo when dragging
+                                        if (isDraggingCursor) {
+                                            drawCircle(
+                                                color = colors.equalsKeyBg.copy(alpha = 0.25f),
+                                                radius = handleRadius + 6.dp.toPx(),
+                                                center = handleCenter
+                                            )
+                                        }
+
+                                        drawCircle(
+                                            color = colors.equalsKeyBg.copy(alpha = effectiveAlpha),
+                                            radius = handleRadius,
+                                            center = handleCenter
+                                        )
+                                    }
+                                }
+                            }
+                    ) {
+                        Text(
+                            text = displayText,
+                            color = when {
+                                isPlaceholder -> colors.textSecondary.copy(alpha = 0.5f)
+                                else -> colors.textPrimary
+                            },
+                            fontSize = exprFontSize,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.End,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .padding(start = startInset, end = endInset, top = topInset, bottom = bottomInset)
+                                .widthIn(min = (minWidth - startInset - endInset).coerceAtLeast(0.dp))
+                                .align(Alignment.CenterEnd),
+                            onTextLayout = { textLayoutResult = it }
+                        )
+                    }
+                }
+
+                // Magnifier Loupe Bubble floating directly above cursor while dragging
+                val activeAnchor = if (isDraggingCursor) {
+                    magnifierAnchorOffset
+                } else {
+                    Offset(cursorScreenX, cursorScreenY)
+                }
+
+                MagnifierPopup(
+                    visible = isDraggingCursor && showCursor,
+                    displayText = displayText,
+                    cursorIndex = clampedIndex,
+                    anchorOffset = activeAnchor,
+                    cursorColor = colors.equalsKeyBg
                 )
             }
         } else {
@@ -207,9 +445,10 @@ fun DisplaySection(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.pointerInput(finalResult) {
                             detectTapGestures(
-                                onLongPress = {
+                                onLongPress = { offset ->
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    ClipboardHelper.copy(context, finalResult, "Final Result")
+                                    actionPopupOffset = offset
+                                    showActionPopup = true
                                 }
                             )
                         }
@@ -228,6 +467,47 @@ fun DisplaySection(
                 }
             }
         }
+
+        // Floating Cut / Copy / Paste popup above cursor or touch point
+        val canCopyOrCut = if (isResultCalculated) {
+            finalResult.isNotEmpty()
+        } else {
+            !isPlaceholder && expression.isNotEmpty()
+        }
+        val hasClipboard = remember(showActionPopup) {
+            if (showActionPopup) ClipboardHelper.hasClipboardText(context) else false
+        }
+
+        CutCopyPastePopup(
+            visible = showActionPopup,
+            onDismissRequest = { showActionPopup = false },
+            anchorOffset = actionPopupOffset,
+            onCut = if (canCopyOrCut) {
+                {
+                    val textToCut = if (isResultCalculated) finalResult else expression
+                    ClipboardHelper.cut(context, textToCut)
+                    onCut?.invoke()
+                    showActionPopup = false
+                }
+            } else null,
+            onCopy = if (canCopyOrCut) {
+                {
+                    val textToCopy = if (isResultCalculated) finalResult else expression
+                    ClipboardHelper.copy(context, textToCopy)
+                    onCopy?.invoke()
+                    showActionPopup = false
+                }
+            } else null,
+            onPaste = if (hasClipboard) {
+                {
+                    val text = ClipboardHelper.getClipboardText(context)
+                    if (text != null) {
+                        onPaste?.invoke(text)
+                    }
+                    showActionPopup = false
+                }
+            } else null
+        )
     }
 }
 
