@@ -334,7 +334,7 @@ fun CalculatorScreen(
                                             fontSize = 15.sp
                                         )
                                         Text(
-                                            text = "Version 1.2.0 & tools suite",
+                                            text = "Version 1.3.0 & tools suite",
                                             color = colors.textSecondary,
                                             fontSize = 12.sp
                                         )
@@ -439,7 +439,7 @@ fun CalculatorScreen(
                                     modifier = Modifier.width(52.dp).height(32.dp),
                                     backgroundColor = if (state.isInvMode) colors.operatorKeyBg else colors.functionKeyBg,
                                     contentColor = if (state.isInvMode) colors.operatorKeyText else colors.functionKeyText,
-                                    fontSize = 12.sp,
+                                    fontSize = 13.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     shapeCornerRadius = 8.dp,
                                     onClick = { onAction(CalculatorAction.ToggleInvMode) }
@@ -562,7 +562,7 @@ fun CalculatorScreen(
                                     .fillMaxHeight(),
                                 backgroundColor = if (state.isInvMode) colors.operatorKeyBg else colors.functionKeyBg,
                                 contentColor = if (state.isInvMode) colors.operatorKeyText else colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 14.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = {
@@ -849,7 +849,7 @@ private fun AngleModeToggleSwitch(
                 Text(
                     text = "DEG",
                     color = degTextColor,
-                    fontSize = 12.sp,
+                    fontSize = 13.5.sp,
                     fontWeight = if (isDegreeMode) FontWeight.Bold else FontWeight.Medium
                 )
             }
@@ -882,7 +882,7 @@ private fun AngleModeToggleSwitch(
                 Text(
                     text = "RAD",
                     color = radTextColor,
-                    fontSize = 12.sp,
+                    fontSize = 13.5.sp,
                     fontWeight = if (!isDegreeMode) FontWeight.Bold else FontWeight.Medium
                 )
             }

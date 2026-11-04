@@ -55,7 +55,7 @@ fun AppInfoDialog(
                         color = colors.textPrimary
                     )
                     Text(
-                        text = "Version 1.2.0 • All-in-One Suite",
+                        text = "Version 1.3.0 • All-in-One Suite",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         color = colors.operatorKeyText
@@ -91,6 +91,7 @@ fun AppInfoDialog(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     FeatureBullet(text = "Standard & Scientific modes with DEG / RAD angle toggle")
+                    FeatureBullet(text = "High-visibility typography: boosted font sizes for numpad digits & scientific functions")
                     FeatureBullet(text = "Inverse functions (sin⁻¹, cos⁻¹, tan⁻¹), powers (xʸ) & factorials (n!)")
                     FeatureBullet(text = "Smart percentages (+10%, −15%, standalone %) & mathematical constants (π, e)")
                     FeatureBullet(text = "Persistent calculation history with Room database")
@@ -99,12 +100,13 @@ fun AppInfoDialog(
                 // Feature Group 2: Draggable Cursor
                 InfoSectionHeader(
                     icon = Icons.Default.TouchApp,
-                    title = "Interactive Draggable Cursor",
+                    title = "Interactive Native Cursor & Clipboard",
                     tint = Color(0xFF0EA5E9)
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    FeatureBullet(text = "Droplet handle with smooth horizontal drag-to-seek")
-                    FeatureBullet(text = "Tactile haptic feedback when stepping between digits")
+                    FeatureBullet(text = "Native Android text editor cursor with precision loupe & teardrop handle")
+                    FeatureBullet(text = "Smart cursor snapping that protects operator spacing & equation integrity")
+                    FeatureBullet(text = "Universal Cut, Copy, and Paste support across the calculator and tools")
                     FeatureBullet(text = "Direct cursor positioning for effortless in-place editing across the app")
                 }
 
@@ -128,6 +130,7 @@ fun AppInfoDialog(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     FeatureBullet(text = "11 Unit Converters with live forex exchange rates (Currency, Length, Weight, Temp, Speed, Storage, etc.)")
+                    FeatureBullet(text = "Smart input replacement: entering digits seamlessly replaces default presets")
                     FeatureBullet(text = "Financial Calculators: Loan EMI, Investment (SIP), GST, Discount")
                     FeatureBullet(text = "Date & Time differences, duration add/subtract & Age calculator")
                     FeatureBullet(text = "Health & Utilities: BMI Calculator & Multi-Base Programmer Converter (HEX, DEC, OCT, BIN)")

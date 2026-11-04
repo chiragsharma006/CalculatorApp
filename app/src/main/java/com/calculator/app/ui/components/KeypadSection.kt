@@ -85,7 +85,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "sin⁻¹" else "sin",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "sin⁻¹(" else "sin(")) }
                             )
@@ -94,7 +94,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "cos⁻¹" else "cos",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "cos⁻¹(" else "cos(")) }
                             )
@@ -103,7 +103,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "tan⁻¹" else "tan",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "tan⁻¹(" else "tan(")) }
                             )
@@ -112,7 +112,7 @@ fun KeypadSection(
                                 text = "AC",
                                 backgroundColor = colors.clearKeyBg,
                                 contentColor = colors.clearKeyText,
-                                fontSize = 19.sp,
+                                fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ClearAll) }
@@ -122,7 +122,7 @@ fun KeypadSection(
                                 text = "(",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 18.sp,
+                                fontSize = 22.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ParenthesisOpen) }
                             )
@@ -131,7 +131,7 @@ fun KeypadSection(
                                 text = ")",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 18.sp,
+                                fontSize = 22.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ParenthesisClose) }
                             )
@@ -140,7 +140,7 @@ fun KeypadSection(
                                 text = "÷",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 22.sp,
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Operator("÷")) }
@@ -157,7 +157,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "sinh⁻¹" else "sinh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "sinh⁻¹(" else "sinh(")) }
                             )
@@ -166,7 +166,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "cosh⁻¹" else "cosh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "cosh⁻¹(" else "cosh(")) }
                             )
@@ -175,7 +175,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "tanh⁻¹" else "tanh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "tanh⁻¹(" else "tanh(")) }
                             )
@@ -184,7 +184,7 @@ fun KeypadSection(
                                 text = "7",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("7")) }
@@ -194,7 +194,7 @@ fun KeypadSection(
                                 text = "8",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("8")) }
@@ -204,7 +204,7 @@ fun KeypadSection(
                                 text = "9",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("9")) }
@@ -214,7 +214,7 @@ fun KeypadSection(
                                 text = "×",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 22.sp,
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Operator("×")) }
@@ -231,7 +231,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "eˣ" else "ln",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "e^(" else "ln(")) }
                             )
@@ -240,7 +240,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "10ˣ" else "log",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "10^(" else "log(")) }
                             )
@@ -249,7 +249,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "1/x" else "|x|",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { if (isInvMode) onAction(CalculatorAction.Reciprocal) else onAction(CalculatorAction.ScientificFunction("abs(")) }
                             )
@@ -258,7 +258,7 @@ fun KeypadSection(
                                 text = "4",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("4")) }
@@ -268,7 +268,7 @@ fun KeypadSection(
                                 text = "5",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("5")) }
@@ -278,7 +278,7 @@ fun KeypadSection(
                                 text = "6",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("6")) }
@@ -288,7 +288,7 @@ fun KeypadSection(
                                 text = "−",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 22.sp,
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Operator("−")) }
@@ -305,7 +305,7 @@ fun KeypadSection(
                                 text = "e",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 14.sp,
+                                fontSize = 17.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ConstantE) }
                             )
@@ -314,7 +314,7 @@ fun KeypadSection(
                                 text = "π",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 14.sp,
+                                fontSize = 17.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.ConstantPi) }
                             )
@@ -323,7 +323,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "x³" else "x²",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(if (isInvMode) CalculatorAction.PowerCube else CalculatorAction.Square) }
                             )
@@ -332,7 +332,7 @@ fun KeypadSection(
                                 text = "1",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("1")) }
@@ -342,7 +342,7 @@ fun KeypadSection(
                                 text = "2",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("2")) }
@@ -352,7 +352,7 @@ fun KeypadSection(
                                 text = "3",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("3")) }
@@ -362,7 +362,7 @@ fun KeypadSection(
                                 text = "+",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 22.sp,
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Operator("+")) }
@@ -379,7 +379,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "³√" else "√",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 14.sp,
+                                fontSize = 17.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { if (isInvMode) onAction(CalculatorAction.CubeRoot) else onAction(CalculatorAction.SquareRoot) }
                             )
@@ -388,7 +388,7 @@ fun KeypadSection(
                                 text = "^",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 16.sp,
+                                fontSize = 19.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Operator("^")) }
                             )
@@ -397,7 +397,7 @@ fun KeypadSection(
                                 text = "!",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 15.sp,
+                                fontSize = 18.sp,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Factorial) }
                             )
@@ -406,7 +406,7 @@ fun KeypadSection(
                                 text = "0",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 21.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Number("0")) }
@@ -416,7 +416,7 @@ fun KeypadSection(
                                 text = ".",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 23.sp,
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Decimal) }
@@ -426,7 +426,7 @@ fun KeypadSection(
                                 text = "%",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 20.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Percentage) }
@@ -436,7 +436,7 @@ fun KeypadSection(
                                 text = "=",
                                 backgroundColor = colors.equalsKeyBg,
                                 contentColor = colors.equalsKeyText,
-                                fontSize = 24.sp,
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 10.dp,
                                 onClick = { onAction(CalculatorAction.Calculate) }
@@ -753,7 +753,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "sin⁻¹" else "sin",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.5.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "sin⁻¹(" else "sin(")) }
                             )
@@ -762,7 +762,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "cos⁻¹" else "cos",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.5.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "cos⁻¹(" else "cos(")) }
                             )
@@ -771,7 +771,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "tan⁻¹" else "tan",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.5.sp,
+                                fontSize = if (isInvMode) 13.sp else 15.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "tan⁻¹(" else "tan(")) }
                             )
@@ -780,7 +780,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "eˣ" else "ln",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = if (isInvMode) 14.5.sp else 16.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "e^(" else "ln(")) }
                             )
@@ -789,7 +789,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "10ˣ" else "log",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 11.5.sp else 13.sp,
+                                fontSize = if (isInvMode) 13.5.sp else 15.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "10^(" else "log(")) }
                             )
@@ -805,7 +805,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "sinh⁻¹" else "sinh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "sinh⁻¹(" else "sinh(")) }
                             )
@@ -814,7 +814,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "cosh⁻¹" else "cosh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "cosh⁻¹(" else "cosh(")) }
                             )
@@ -823,7 +823,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "tanh⁻¹" else "tanh",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = if (isInvMode) 10.5.sp else 12.sp,
+                                fontSize = if (isInvMode) 12.sp else 14.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ScientificFunction(if (isInvMode) "tanh⁻¹(" else "tanh(")) }
                             )
@@ -832,7 +832,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "1/x" else "|x|",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { if (isInvMode) onAction(CalculatorAction.Reciprocal) else onAction(CalculatorAction.ScientificFunction("abs(")) }
                             )
@@ -841,7 +841,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "x³" else "x²",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 13.sp,
+                                fontSize = 15.5.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(if (isInvMode) CalculatorAction.PowerCube else CalculatorAction.Square) }
                             )
@@ -857,7 +857,7 @@ fun KeypadSection(
                                 text = "e",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 18.sp,
+                                fontSize = 21.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ConstantE) }
                             )
@@ -866,7 +866,7 @@ fun KeypadSection(
                                 text = "AC",
                                 backgroundColor = colors.clearKeyBg,
                                 contentColor = colors.clearKeyText,
-                                fontSize = 23.sp,
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ClearAll) }
@@ -876,7 +876,7 @@ fun KeypadSection(
                                 text = "(",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 25.sp,
+                                fontSize = 27.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ParenthesisOpen) }
                             )
@@ -885,7 +885,7 @@ fun KeypadSection(
                                 text = ")",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 25.sp,
+                                fontSize = 27.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ParenthesisClose) }
                             )
@@ -894,7 +894,7 @@ fun KeypadSection(
                                 text = "÷",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 28.sp,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Operator("÷")) }
@@ -911,7 +911,7 @@ fun KeypadSection(
                                 text = if (isInvMode) "³√" else "√",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 18.sp,
+                                fontSize = 21.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { if (isInvMode) onAction(CalculatorAction.CubeRoot) else onAction(CalculatorAction.SquareRoot) }
                             )
@@ -920,7 +920,7 @@ fun KeypadSection(
                                 text = "7",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("7")) }
@@ -930,7 +930,7 @@ fun KeypadSection(
                                 text = "8",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("8")) }
@@ -940,7 +940,7 @@ fun KeypadSection(
                                 text = "9",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("9")) }
@@ -950,7 +950,7 @@ fun KeypadSection(
                                 text = "×",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 28.sp,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Operator("×")) }
@@ -967,7 +967,7 @@ fun KeypadSection(
                                 text = "^",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 22.sp,
+                                fontSize = 24.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Operator("^")) }
                             )
@@ -976,7 +976,7 @@ fun KeypadSection(
                                 text = "4",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("4")) }
@@ -986,7 +986,7 @@ fun KeypadSection(
                                 text = "5",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("5")) }
@@ -996,7 +996,7 @@ fun KeypadSection(
                                 text = "6",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("6")) }
@@ -1006,7 +1006,7 @@ fun KeypadSection(
                                 text = "−",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 28.sp,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Operator("−")) }
@@ -1023,7 +1023,7 @@ fun KeypadSection(
                                 text = "π",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 19.sp,
+                                fontSize = 22.sp,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.ConstantPi) }
                             )
@@ -1032,7 +1032,7 @@ fun KeypadSection(
                                 text = "1",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("1")) }
@@ -1042,7 +1042,7 @@ fun KeypadSection(
                                 text = "2",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("2")) }
@@ -1052,7 +1052,7 @@ fun KeypadSection(
                                 text = "3",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("3")) }
@@ -1062,7 +1062,7 @@ fun KeypadSection(
                                 text = "+",
                                 backgroundColor = colors.operatorKeyBg,
                                 contentColor = colors.operatorKeyText,
-                                fontSize = 28.sp,
+                                fontSize = 30.sp,
                                 fontWeight = FontWeight.Medium,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Operator("+")) }
@@ -1079,7 +1079,7 @@ fun KeypadSection(
                                 text = "!",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 20.sp,
+                                fontSize = 23.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Factorial) }
@@ -1089,7 +1089,7 @@ fun KeypadSection(
                                 text = "0",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 26.sp,
+                                fontSize = 29.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Number("0")) }
@@ -1099,7 +1099,7 @@ fun KeypadSection(
                                 text = ".",
                                 backgroundColor = colors.numberKeyBg,
                                 contentColor = colors.numberKeyText,
-                                fontSize = 28.sp,
+                                fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Decimal) }
@@ -1109,7 +1109,7 @@ fun KeypadSection(
                                 text = "%",
                                 backgroundColor = colors.functionKeyBg,
                                 contentColor = colors.functionKeyText,
-                                fontSize = 25.sp,
+                                fontSize = 26.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Percentage) }
@@ -1119,7 +1119,7 @@ fun KeypadSection(
                                 text = "=",
                                 backgroundColor = colors.equalsKeyBg,
                                 contentColor = colors.equalsKeyText,
-                                fontSize = 30.sp,
+                                fontSize = 33.sp,
                                 fontWeight = FontWeight.Bold,
                                 shapeCornerRadius = 11.dp,
                                 onClick = { onAction(CalculatorAction.Calculate) }
